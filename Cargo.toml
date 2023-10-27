@@ -3,6 +3,7 @@ name = "domain-transaction-producer"
 description = "A tool to produce transactions for the domain"
 version = "0.1.0"
 edition = "2021"
+authors = ["Abhijit Roy <dalvath3700@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -14,3 +15,4 @@ env_logger = "0.10.0"
 ethers = { version = "2.0.9", default-features = false, features = ["rustls"] }
 eyre = "0.6"
 tokio = { version = "1.19", features = ["macros", "rt-multi-thread"] }
+serde_json = "1.0.107"
