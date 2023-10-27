@@ -1,13 +1,32 @@
-extern crate structopt;
-use structopt::StructOpt;
-
 use std::str::FromStr;
+use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "dtp", about = "Domain Transaction Producer")]
 struct Cli {
-    #[structopt(subcommand)]
-    cmd: Command,
+    /// Number of accounts
+    #[structopt(short = "a", long)]
+    num_accounts: u32,
+
+    /// Transaction type: light or heavy
+    #[structopt(short = "t", long)]
+    transaction_type: String,
+
+    /// Number of blocks to run for
+    #[structopt(short = "b", long)]
+    num_blocks: Option<u32>,
+
+    /// Initial funded account private key
+    #[structopt(short = "k", long)]
+    initial_funded_account_private_key: String,
+
+    /// Funding amount
+    #[structopt(short = "f", long)]
+    funding_amount: u64,
+
+    /// Ethereum RPC node URL
+    #[structopt(short = "r", long)]
+    rpc_url: String,
 }
 
 #[derive(Debug)]
@@ -28,88 +47,22 @@ impl FromStr for TransactionType {
     }
 }
 
-/// Funder struct
-// TODO: might have to transfer the data to a local file or DB.
-struct Funder {
-    address: String,
-}
-
-/// RPC struct
-// TODO: might have to transfer the data to a local file or DB.
-struct Rpc {
-    url: String,
-}
-
-#[derive(StructOpt, Debug)]
-enum Command {
-    #[structopt(about = "Send transaction (light or heavy computation)")]
-    SendTransaction {
-        #[structopt(short, long, help = "Provide Transaction type")]
-        types: TransactionType,
-    },
-    #[structopt(about = "Funder set")]
-    SetFunder {
-        #[structopt(short, long, help = "Provide funder address")]
-        address: String,
-    },
-    #[structopt(about = "Fund address with amount")]
-    Fund {
-        #[structopt(short, long, help = "Provide receiver address")]
-        receiver: String,
-        #[structopt(short, long, help = "Provide amount to be funded")]
-        // TODO: convert this to u256 type later
-        amount: u128,
-    },
-    #[structopt(about = "Set RPC Url")]
-    SetRpcUrl {
-        // TODO: use dotenv to fetch the url from ".env" file as default.
-        #[structopt(short, long, default_value = "", help = "Provide RPC Url")]
-        url: String,
-    },
-    #[structopt(about = "View config details")]
-    Info {
-        #[structopt(short, long)]
-        show: bool,
-    },
-}
-
 fn main() {
     let opt = Cli::from_args();
-    let mut funder = Funder {
-        address: "0x123".to_string(),
-    };
 
-    // TODO: use dotenv to fetch the url from ".env" file as default.
-    let mut rpc_url = Rpc {
-        url: "https://domain-3.evm.gemini-3f.subspace.network/ws".to_string(),
-    };
-
-    match opt.cmd {
-        Command::SendTransaction { types } => {
-            println!("Hello, {:?}!", types);
-            match types {
-                TransactionType::LIGHT => {
-                    todo!("write the ethers-rs code")
-                }
-                TransactionType::HEAVY => {
-                    todo!("write the ethers-rs code")
-                }
+    match opt.transaction_type.parse::<TransactionType>() {
+        Ok(transaction_type) => match opt.num_blocks {
+            Some(num_blocks) => {
+                println!("Running {} transaction(s) of type {:?} for {} block(s) with {} account(s) and funding amount of {} wei using initial funded account with private key {} and Ethereum RPC node URL {}", 
+                    opt.num_accounts, transaction_type, num_blocks, opt.num_accounts, opt.funding_amount, opt.initial_funded_account_private_key, opt.rpc_url);
             }
-        }
-        Command::SetFunder { address } => {
-            funder.address = address;
-        }
-        Command::Fund { receiver, amount } => {
-            todo!("send TSSC using ethers-rs code")
-        }
-        Command::SetRpcUrl { url } => {
-            rpc_url.url = url;
-        }
-        Command::Info { show } => {
-            if show {
-                println!("Funder address: {}", funder.address);
-                println!("RPC Url: {}", rpc_url.url);
+            None => {
+                println!("Running {} transaction(s) of type {:?} indefinitely with {} account(s) and funding amount of {} wei using initial funded account with private key {} and Ethereum RPC node URL {}", 
+                    opt.num_accounts, transaction_type, opt.num_accounts, opt.funding_amount, opt.initial_funded_account_private_key, opt.rpc_url);
             }
+        },
+        Err(e) => {
+            println!("{}", e);
         }
     }
 }

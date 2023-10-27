@@ -1,5 +1,6 @@
 [package]
 name = "domain-transaction-producer"
+description = "A tool to produce transactions for the domain"
 version = "0.1.0"
 edition = "2021"
 
