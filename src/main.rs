@@ -11,6 +11,7 @@ use structopt::StructOpt;
 mod utils;
 use utils::{transfer_tssc, wei_to_tssc};
 
+/// TODO: able to parse like "1 ETH", "1000 Wei"
 #[derive(StructOpt, Debug)]
 #[structopt(name = "dtp", about = "Domain Transaction Producer")]
 /// CLI params
@@ -32,7 +33,6 @@ struct Cli {
     initial_funded_account_private_key: String,
 
     /// Funding amount
-    /// TODO: able to parse like "1 ETH", "1000 Wei"
     #[structopt(short = "f", long)]
     funding_amount: u64,
 

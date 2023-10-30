@@ -38,7 +38,6 @@ pub(crate) async fn transfer_tssc(
     // 2. sign the tx
     println!("Signing tx...");
     let signature = from_wallet.sign_transaction(&typed_tx).await?;
-
     // println!("\nSignature: {:?}", signature);
 
     // 3. serialize the signed tx to get the raw tx
@@ -66,6 +65,7 @@ pub(crate) async fn transfer_tssc(
 
     assert!(nonce1 < nonce2);
 
+    // CLEANUP: remove later (if not required)
     // let balance_after = provider.get_balance(from, None).await?;
     // assert!(balance_after < balance_before);
 
