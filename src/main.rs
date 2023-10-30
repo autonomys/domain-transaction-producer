@@ -9,7 +9,7 @@ use std::str::FromStr;
 use structopt::StructOpt;
 
 mod utils;
-use utils::{transfer_tssc, wei_to_tssc};
+use utils::*;
 
 /// TODO: able to parse like "1 ETH", "1000 Wei"
 #[derive(StructOpt, Debug)]
@@ -56,7 +56,7 @@ impl FromStr for TransactionType {
         match s.to_uppercase().as_str() {
             "LIGHT" => Ok(TransactionType::LIGHT),
             "HEAVY" => Ok(TransactionType::HEAVY),
-            _ => Err(format!("{} is not a valid TransactionType", s)),
+            _ => Err(format!("\'{}\' is not a valid TransactionType", s)),
         }
     }
 }
@@ -79,15 +79,15 @@ async fn main() -> Result<()> {
             let funder_address = funder_wallet.address();
 
             // get the funder balance (in Wei)
-            let funder_bal_wei_initial = provider
+            let funder_balance_wei_initial = provider
                 .get_balance(
                     funder_address,
                     Some(provider.get_block_number().await?.into()),
                 )
                 .await?;
-            let funder_balance_tssc_initial = wei_to_tssc(funder_bal_wei_initial);
+            let funder_balance_tssc_initial = wei_to_tssc_string(funder_balance_wei_initial);
             println!(
-                "\nFunder's initial balance: {} TSSC.",
+                "\nFunder's initial balance: {} TSSC.\n=====",
                 funder_balance_tssc_initial
             );
 
@@ -100,11 +100,11 @@ async fn main() -> Result<()> {
 
             // check for sufficient balance in funder's account
             assert!(
-                funder_bal_wei_initial > required_balance,
+                funder_balance_wei_initial > required_balance,
                 "{}",
                 &format!(
                     "funder has insufficient balance by {:?}",
-                    required_balance.checked_sub(funder_bal_wei_initial)
+                    required_balance.checked_sub(funder_balance_wei_initial)
                 )
             );
 
@@ -167,11 +167,17 @@ async fn main() -> Result<()> {
 
             // Show the funder's final balance at the end
             let funder_balance_wei_final = provider.get_balance(funder_address, None).await?;
-            let funder_balance_tssc_final = wei_to_tssc(funder_balance_wei_final);
+            let funder_balance_tssc_final = wei_to_tssc_string(funder_balance_wei_final);
             println!(
-                "\nFunder's final balance: {} TSSC.",
+                "\n=====\nFunder's final balance: {} TSSC.",
                 funder_balance_tssc_final
             );
+            let spent_bal_tssc = wei_to_tssc_f64(
+                funder_balance_wei_initial
+                    .checked_sub(funder_balance_wei_final)
+                    .expect("Invalid sub op."),
+            );
+            println!("Funder spent: {:.18} TSSC", spent_bal_tssc);
         }
         Err(e) => {
             bail!("{}", e);

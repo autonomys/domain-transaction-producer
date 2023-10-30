@@ -55,15 +55,22 @@ pub(crate) async fn transfer_tssc(
         .await
         .expect("Failure in raw tx [2]")
         .expect("Failure in getting tx receipt");
+    // TODO: show the transaction fee as well
+    // "Fund sent to {} with hash: {:?} consuming fee:  in block #{} ",
     println!(
-        "Fund sent to {} with hash: {:?} in block #{}",
+        "Fund sent to \'{}\' with tx hash: \'{:?}\' indexed at #{} in block #{} ",
         to,
         tx_receipt.transaction_hash,
+        tx_receipt.transaction_index,
+        // tx_receipt.cumulative_gas_used,
         tx_receipt.block_number.unwrap()
     );
-    let nonce2 = provider.get_transaction_count(from, None).await?;
 
-    assert!(nonce1 < nonce2);
+    let nonce2 = provider.get_transaction_count(from, None).await?;
+    assert!(
+        nonce2 > nonce1,
+        "Sender's nonce must be incremented after each tx"
+    );
 
     // CLEANUP: remove later (if not required)
     // let balance_after = provider.get_balance(from, None).await?;
@@ -75,8 +82,19 @@ pub(crate) async fn transfer_tssc(
     Ok(())
 }
 
-/// Convert Wei to TSSC
-pub(crate) fn wei_to_tssc(bal_wei: U256) -> String {
+/// Convert Wei to TSSC (in String)
+pub(crate) fn wei_to_tssc_string(bal_wei: U256) -> String {
     let bal_tssc = format_units(bal_wei, "ether").unwrap();
     bal_tssc
+}
+
+/// Convert Wei to TSSC (in f64)
+pub(crate) fn wei_to_tssc_f64(bal_wei: U256) -> f64 {
+    let bal_tssc = bal_wei.as_usize() as f64 / 1e18;
+    bal_tssc
+}
+
+/// sending a bundle of txs
+fn bundle_tx() {
+    todo!("bundle txs using flashbot mechanism.")
 }
