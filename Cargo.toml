@@ -1,5 +1,5 @@
 [package]
-name = "domain-transaction-producer"
+name = "dtp"
 description = "A tool to produce transactions for the domain"
 version = "0.1.0"
 edition = "2021"
@@ -10,8 +10,8 @@ authors = ["Abhijit Roy <dalvath3700@gmail.com>"]
 [dependencies]
 clap = "4.4.7"
 structopt = "0.3.26"
-dotenv = "0.15.0"
-env_logger = "0.10.0"
+# dotenv = "0.15.0"
+# env_logger = "0.10.0"
 ethers = { version = "2.0.9", default-features = false, features = ["rustls"] }
 eyre = "0.6"
 tokio = { version = "1.19", features = ["macros", "rt-multi-thread"] }

@@ -30,8 +30,8 @@ pub(crate) async fn transfer_tssc(
         max_fee_per_gas: Some(provider.get_gas_price().await?),
         chain_id: Some(provider.get_chainid().await?.as_u64().into()),
     });
-    println!("\nTyped tx: {:?}", typed_tx);
-    println!("\nTyped tx hash: {:?}", typed_tx.sighash());
+    // println!("\nTyped tx: {:?}", typed_tx);
+    // println!("\nTyped tx hash: {:?}", typed_tx.sighash());
 
     // 2. sign the tx
     let signature = from_wallet.sign_transaction(&typed_tx).await?;
@@ -40,7 +40,7 @@ pub(crate) async fn transfer_tssc(
     // 3. serialize the signed tx to get the raw tx
     // RLP encoding has to be done as `Bytes` (ethers::types::Bytes) array
     let rlp_encoded_tx_bytes = typed_tx.rlp_signed(&signature);
-    println!("\nRLP encoded tx bytes: {:?}", rlp_encoded_tx_bytes);
+    // println!("\nRLP encoded tx bytes: {:?}", rlp_encoded_tx_bytes);
 
     // 4. send the raw transaction
     let tx_receipt = provider
