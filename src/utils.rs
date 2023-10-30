@@ -47,7 +47,7 @@ pub(crate) async fn transfer_tssc(
     // println!("\nRLP encoded tx bytes: {:?}", rlp_encoded_tx_bytes);
 
     // 4. send the raw transaction
-    println!("Signing raw tx...");
+    println!("Sending raw tx...");
     let tx_receipt = provider
         // `eth_sendRawTransaction` is run
         .send_raw_transaction(rlp_encoded_tx_bytes)
@@ -77,9 +77,6 @@ pub(crate) async fn transfer_tssc(
 
 /// Convert Wei to TSSC
 pub(crate) fn wei_to_tssc(bal_wei: U256) -> String {
-    let bal_tssc =
-        // CLEANUP: Confirm trial before cleaning.
-        // bal_wei.as_usize() as f64 / 1e18;    // in f64
-    format_units(bal_wei, "ether").unwrap();
+    let bal_tssc = format_units(bal_wei, "ether").unwrap();
     bal_tssc
 }
