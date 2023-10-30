@@ -2,6 +2,7 @@ use ethers::{
     prelude::*,
     signers::Wallet,
     types::transaction::{eip2718::TypedTransaction, eip2930::AccessList},
+    utils::format_units,
 };
 use k256::ecdsa::SigningKey;
 
@@ -18,6 +19,7 @@ pub(crate) async fn transfer_tssc(
     let nonce1 = provider.get_transaction_count(from, None).await?;
 
     // 1. create a tx
+    println!("Creating tx...");
     let typed_tx = TypedTransaction::Eip1559(Eip1559TransactionRequest {
         from: Some(from),
         to: Some(to.into()),
@@ -34,7 +36,9 @@ pub(crate) async fn transfer_tssc(
     // println!("\nTyped tx hash: {:?}", typed_tx.sighash());
 
     // 2. sign the tx
+    println!("Signing tx...");
     let signature = from_wallet.sign_transaction(&typed_tx).await?;
+
     // println!("\nSignature: {:?}", signature);
 
     // 3. serialize the signed tx to get the raw tx
@@ -43,6 +47,7 @@ pub(crate) async fn transfer_tssc(
     // println!("\nRLP encoded tx bytes: {:?}", rlp_encoded_tx_bytes);
 
     // 4. send the raw transaction
+    println!("Signing raw tx...");
     let tx_receipt = provider
         // `eth_sendRawTransaction` is run
         .send_raw_transaction(rlp_encoded_tx_bytes)
@@ -71,10 +76,10 @@ pub(crate) async fn transfer_tssc(
 }
 
 /// Convert Wei to TSSC
-pub(crate) fn wei_to_tssc(bal_wei: U256) -> f64 {
+pub(crate) fn wei_to_tssc(bal_wei: U256) -> String {
     let bal_tssc =
         // CLEANUP: Confirm trial before cleaning.
-        // ethers::utils::parse_units(funder_balance_wei_final, "ether").unwrap();
-        bal_wei.as_usize() as f64 / 1e18;
+        // bal_wei.as_usize() as f64 / 1e18;    // in f64
+    format_units(bal_wei, "ether").unwrap();
     bal_tssc
 }

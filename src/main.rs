@@ -81,11 +81,11 @@ async fn main() -> Result<()> {
             Some(provider.get_block_number().await?.into()),
         )
         .await?;
-    let funder_balance_tssc_initial =
-        // ethers::utils::parse_units(funder_balance_wei_final, "ether").unwrap();
-        funder_bal_wei_initial.as_usize() as f64 / 1e18;
     let funder_balance_tssc_initial = wei_to_tssc(funder_bal_wei_initial);
-    println!("\nFunder's initial balance (in TSSC): {funder_balance_tssc_initial:.18}");
+    println!(
+        "\nFunder's initial balance: {} TSSC.",
+        funder_balance_tssc_initial
+    );
 
     // calculate the required balance (in Wei)
     let required_balance: U256 = U256::from(
@@ -114,13 +114,11 @@ async fn main() -> Result<()> {
         // println!("Successfully created new keypair.");
         let pub_key = wallet.address();
         println!("\nAddress[{i}]:     {:?}", pub_key);
-        // TODO: save the keypair into a local file or show in the output. Create a CLI flag like --to-console/--to-file
+        // TODO: [OPTIONAL] save the keypair into a local file or show in the output. Create a CLI flag like --to-console/--to-file
         let priv_key = format!("0x{}", hex::encode(wallet.signer().to_bytes()));
         println!("Private key[{i}]: {}", priv_key);
         wallet_addresses.push(pub_key);
         wallet_priv_keys.push(priv_key);
-
-        // TODO: [OPTIONAL] save this keypairs into a file
 
         // 3. transfer funds
         // TODO: make this as bundle (may be) outside the for-loop
@@ -156,7 +154,10 @@ async fn main() -> Result<()> {
     // Show the funder's final balance at the end
     let funder_balance_wei_final = provider.get_balance(funder_address, None).await?;
     let funder_balance_tssc_final = wei_to_tssc(funder_balance_wei_final);
-    println!("\nFunder's final balance (in TSSC): {funder_balance_tssc_final:.18}");
+    println!(
+        "\nFunder's final balance: {} TSSC.",
+        funder_balance_tssc_final
+    );
 
     Ok(())
 }
