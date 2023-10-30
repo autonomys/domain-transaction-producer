@@ -9,7 +9,7 @@ use std::str::FromStr;
 use structopt::StructOpt;
 
 mod utils;
-use utils::transfer_tssc;
+use utils::{transfer_tssc, wei_to_tssc};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "dtp", about = "Domain Transaction Producer")]
@@ -75,12 +75,17 @@ async fn main() -> Result<()> {
     let funder_address = funder_wallet.address();
 
     // get the funder balance (in Wei)
-    let funder_bal_wei = provider
+    let funder_bal_wei_initial = provider
         .get_balance(
             funder_address,
             Some(provider.get_block_number().await?.into()),
         )
         .await?;
+    let funder_balance_tssc_initial =
+        // ethers::utils::parse_units(funder_balance_wei_final, "ether").unwrap();
+        funder_bal_wei_initial.as_usize() as f64 / 1e18;
+    let funder_balance_tssc_initial = wei_to_tssc(funder_bal_wei_initial);
+    println!("\nFunder's initial balance (in TSSC): {funder_balance_tssc_initial:.18}");
 
     // calculate the required balance (in Wei)
     let required_balance: U256 = U256::from(
@@ -91,11 +96,11 @@ async fn main() -> Result<()> {
 
     // check for sufficient balance in funder's account
     assert!(
-        funder_bal_wei > required_balance,
+        funder_bal_wei_initial > required_balance,
         "{}",
         &format!(
             "funder has insufficient balance by {:?}",
-            required_balance.checked_sub(funder_bal_wei)
+            required_balance.checked_sub(funder_bal_wei_initial)
         )
     );
 
@@ -108,10 +113,10 @@ async fn main() -> Result<()> {
         let wallet = LocalWallet::new(&mut rng);
         // println!("Successfully created new keypair.");
         let pub_key = wallet.address();
-        println!("\nAddress:     {:?}", pub_key);
+        println!("\nAddress[{i}]:     {:?}", pub_key);
         // TODO: save the keypair into a local file or show in the output. Create a CLI flag like --to-console/--to-file
         let priv_key = format!("0x{}", hex::encode(wallet.signer().to_bytes()));
-        println!("Private key: {}", priv_key);
+        println!("Private key[{i}]: {}", priv_key);
         wallet_addresses.push(pub_key);
         wallet_priv_keys.push(priv_key);
 
@@ -149,8 +154,9 @@ async fn main() -> Result<()> {
     }
 
     // Show the funder's final balance at the end
-    let funder_balance_after = provider.get_balance(funder_address, None).await?;
-    println!("{}", funder_balance_after);
+    let funder_balance_wei_final = provider.get_balance(funder_address, None).await?;
+    let funder_balance_tssc_final = wei_to_tssc(funder_balance_wei_final);
+    println!("\nFunder's final balance (in TSSC): {funder_balance_tssc_final:.18}");
 
     Ok(())
 }

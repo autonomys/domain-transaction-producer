@@ -5,7 +5,7 @@ Domain Transaction Producer for Subspace EVM Network
 ## Usage
 
 ```sh
-$ domain-transaction-producer
+$ dtp --help
 dtp 0.1.0
 Domain Transaction Producer
 

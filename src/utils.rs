@@ -35,7 +35,7 @@ pub(crate) async fn transfer_tssc(
 
     // 2. sign the tx
     let signature = from_wallet.sign_transaction(&typed_tx).await?;
-    println!("\nSignature: {:?}", signature);
+    // println!("\nSignature: {:?}", signature);
 
     // 3. serialize the signed tx to get the raw tx
     // RLP encoding has to be done as `Bytes` (ethers::types::Bytes) array
@@ -52,8 +52,10 @@ pub(crate) async fn transfer_tssc(
         .expect("Failure in raw tx [2]")
         .expect("Failure in getting tx receipt");
     println!(
-        "Transaction sent with hash: {}",
-        tx_receipt.transaction_hash
+        "Fund sent to {} with hash: {:?} in block #{}",
+        to,
+        tx_receipt.transaction_hash,
+        tx_receipt.block_number.unwrap()
     );
     let nonce2 = provider.get_transaction_count(from, None).await?;
 
@@ -66,4 +68,13 @@ pub(crate) async fn transfer_tssc(
     // println!("{} has balance after: {balance_after}", from);
 
     Ok(())
+}
+
+/// Convert Wei to TSSC
+pub(crate) fn wei_to_tssc(bal_wei: U256) -> f64 {
+    let bal_tssc =
+        // CLEANUP: Confirm trial before cleaning.
+        // ethers::utils::parse_units(funder_balance_wei_final, "ether").unwrap();
+        bal_wei.as_usize() as f64 / 1e18;
+    bal_tssc
 }
