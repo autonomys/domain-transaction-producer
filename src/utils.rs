@@ -4,6 +4,7 @@ use ethers::{
     types::transaction::{eip2718::TypedTransaction, eip2930::AccessList},
     utils::format_units,
 };
+use eyre::Result;
 use k256::ecdsa::SigningKey;
 
 /// Transfer TSSC function
@@ -55,14 +56,12 @@ pub(crate) async fn transfer_tssc(
         .await
         .expect("Failure in raw tx [2]")
         .expect("Failure in getting tx receipt");
-    // TODO: show the transaction fee as well
-    // "Fund sent to {} with hash: {:?} consuming fee:  in block #{} ",
     println!(
-        "Fund sent to \'{}\' with tx hash: \'{:?}\' indexed at #{} in block #{} ",
+        "Funds sent to \'{}\', which incurred a gas fee of \'{} TSSC\' has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
         to,
+        get_gas_cost(provider, &tx_receipt).await?,
         tx_receipt.transaction_hash,
         tx_receipt.transaction_index,
-        // tx_receipt.cumulative_gas_used,
         tx_receipt.block_number.unwrap()
     );
 
@@ -97,4 +96,28 @@ pub(crate) fn wei_to_tssc_f64(bal_wei: U256) -> f64 {
 /// sending a bundle of txs
 fn bundle_tx() {
     todo!("bundle txs using flashbot mechanism.")
+}
+
+/// calculate tx gas cost from `gas_price` & `gas_spent` for a tx
+async fn get_gas_cost(provider: &Provider<Http>, tx_receipt: &TransactionReceipt) -> Result<f64> {
+    let gas_price = provider
+        .get_transaction(tx_receipt.transaction_hash)
+        .await?
+        .unwrap()
+        .gas_price
+        .unwrap();
+    // println!("gas price: {} Wei", gas_price);
+
+    let gas_spent = provider
+        .get_transaction(tx_receipt.transaction_hash)
+        .await?
+        .unwrap()
+        .gas;
+    // println!("gas spent: {}", gas_spent);
+
+    let gas_cost_wei = gas_price.checked_mul(gas_spent).unwrap();
+    let gas_cost_tssc = wei_to_tssc_f64(gas_cost_wei);
+    println!("gas cost: {} TSSC", gas_cost_tssc);
+
+    Ok(gas_cost_tssc)
 }
