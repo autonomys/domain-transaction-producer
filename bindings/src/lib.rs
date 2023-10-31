@@ -5,3 +5,4 @@
 //! These files may be overwritten by the codegen system at any time.
 pub mod counter;
 pub mod load;
+pub mod multicall_3;

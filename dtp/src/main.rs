@@ -4,7 +4,10 @@
 
 // imports
 use ethers::contract::Contract;
-use ethers::{core::rand::thread_rng, prelude::*, signers::LocalWallet, types::U256, utils::hex};
+use ethers::{
+    core::k256::ecdsa::SigningKey, core::rand::thread_rng, prelude::*, signers::LocalWallet,
+    types::U256, utils::hex,
+};
 use eyre::{bail, Result};
 use std::{str::FromStr, sync::Arc};
 use structopt::StructOpt;
@@ -72,16 +75,22 @@ async fn main() -> Result<()> {
     match opt.transaction_type.parse::<TransactionType>() {
         Ok(transaction_type) => {
             // get the .env
-            dotenv::from_path("../contracts/.env").expect("Failed to get env variables");
+            dotenv::from_path("./dtp/.env").expect("Failed to get env variables");
 
-            // get counter contract address
+            // get Counter contract address
             let counter_address =
-                std::env::var("COUNTER").expect("Failed to get COUNTER contract address");
+                std::env::var("COUNTER").expect("Failed to get \'Counter\' contract address");
             let counter_address = counter_address.parse::<Address>()?;
 
-            // get load contract address
-            let load_address = std::env::var("LOAD").expect("Failed to get LOAD contract address");
+            // get Load contract address
+            let load_address =
+                std::env::var("LOAD").expect("Failed to get \'LOAD\' contract address");
             let load_address = load_address.parse::<Address>()?;
+
+            // get Multicall contract address
+            let multicall_address =
+                std::env::var("MULTICALL").expect("Failed to get \'Multicall\' contract address");
+            let multicall_address = multicall_address.parse::<Address>()?;
 
             // connect to parsed Node RPC URL
             let provider = Provider::<Http>::try_from(opt.rpc_url)
@@ -123,6 +132,7 @@ async fn main() -> Result<()> {
             // generate some new accounts and send funds to each of them
             let mut wallet_addresses = Vec::<Address>::new();
             let mut wallet_priv_keys = Vec::<String>::new();
+            let mut signers: Vec<Wallet<SigningKey>> = Vec::new();
             // generate multiple accounts based on the parsed number.
             for i in 0..opt.num_accounts {
                 let mut rng: rand::rngs::ThreadRng = thread_rng();
@@ -133,6 +143,7 @@ async fn main() -> Result<()> {
                 // TODO: [OPTIONAL] save the keypair into a local file or show in the output. Create a CLI flag like --to-console/--to-file
                 let priv_key = format!("0x{}", hex::encode(wallet.signer().to_bytes()));
                 println!("Private key[{i}]: {}", priv_key);
+                signers.push(wallet);
                 wallet_addresses.push(pub_key);
                 wallet_priv_keys.push(priv_key);
 
@@ -154,7 +165,21 @@ async fn main() -> Result<()> {
                         // 3. num_accounts > num_blocks
                     }
                     None => {
-                        // TODO: Bundle transactions and send in the next available blocks
+                        // FIXME: Bundle transactions and send in the next available blocks
+                        // Approach-1: Only one sender account
+                        // multicall_light_txs(
+                        //     client.clone(),
+                        //     multicall_address,
+                        //     counter_address,
+                        //     signers,
+                        // )
+                        // .await.expect("Approach-1 failed.");
+
+                        // Approach-2: All new wallet accounts are sender for each call individually
+                        // Say, all of them want to increment
+                        multicall_light_txs_2(client.clone(), counter_address, signers)
+                            .await
+                            .expect("Approach-2 failed.");
                     }
                 }
             } else if let TransactionType::HEAVY = transaction_type {
