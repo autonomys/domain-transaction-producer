@@ -3,10 +3,13 @@
 #![allow(dead_code)]
 
 // imports
+use ethers::contract::Contract;
 use ethers::{core::rand::thread_rng, prelude::*, signers::LocalWallet, types::U256, utils::hex};
 use eyre::{bail, Result};
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 use structopt::StructOpt;
+
+use bindings::counter::COUNTER_ABI;
 
 mod utils;
 use utils::*;
@@ -68,9 +71,24 @@ async fn main() -> Result<()> {
     // The new accounts are supposed to send transactions of type - "LIGHT"/"HEAVY"
     match opt.transaction_type.parse::<TransactionType>() {
         Ok(transaction_type) => {
+            // get the .env
+            dotenv::from_path("../contracts/.env").expect("Failed to get env variables");
+
+            // get counter contract address
+            let counter_address =
+                std::env::var("COUNTER").expect("Failed to get COUNTER contract address");
+            let counter_address = counter_address.parse::<Address>()?;
+
+            // get load contract address
+            let load_address = std::env::var("LOAD").expect("Failed to get LOAD contract address");
+            let load_address = load_address.parse::<Address>()?;
+
             // connect to parsed Node RPC URL
-            let provider: Provider<Http> = Provider::<Http>::try_from(opt.rpc_url)
+            let provider = Provider::<Http>::try_from(opt.rpc_url)
                 .expect("Failed to connect! Please provide a valid RPC URL");
+
+            // Create a shared reference across threads (in each `.await` call). looks synchronous, but many async calls are made here.
+            let client = Arc::new(provider.clone());
 
             // import private key into wallet (local) to get the address
             let private_key_bytes = hex::decode(&opt.initial_funded_account_private_key)?;
@@ -79,17 +97,11 @@ async fn main() -> Result<()> {
             let funder_address = funder_wallet.address();
 
             // get the funder balance (in Wei)
-            let funder_balance_wei_initial = provider
-                .get_balance(
-                    funder_address,
-                    Some(provider.get_block_number().await?.into()),
-                )
+            let funder_balance_wei_initial = client
+                .get_balance(funder_address, Some(client.get_block_number().await?.into()))
                 .await?;
             let funder_balance_tssc_initial = wei_to_tssc_string(funder_balance_wei_initial);
-            println!(
-                "\nFunder's initial balance: {} TSSC.\n=====",
-                funder_balance_tssc_initial
-            );
+            println!("\nFunder's initial balance: {} TSSC.\n=====", funder_balance_tssc_initial);
 
             // calculate the required balance (in Wei)
             let required_balance: U256 = U256::from(
@@ -126,18 +138,13 @@ async fn main() -> Result<()> {
 
                 // transfer funds
                 // TODO: send as bundle outside the for-loop. create a array of signed tx in this loop.
-                transfer_tssc(
-                    &provider,
-                    &funder_wallet,
-                    pub_key,
-                    U256::from(opt.funding_amount),
-                )
-                .await
-                .expect(&format!("error in sending fund to {}", pub_key));
+                transfer_tssc(&provider, &funder_wallet, pub_key, U256::from(opt.funding_amount))
+                    .await
+                    .expect(&format!("error in sending fund to {}", pub_key));
             }
 
             // handle light/heavy txs
-            if let TransactionType::HEAVY = transaction_type {
+            if let TransactionType::LIGHT = transaction_type {
                 match opt.num_blocks {
                     Some(num_blocks) => {
                         // TODO: Bundle transactions and send in the {num_blocks} blocks based on different cases
@@ -150,7 +157,7 @@ async fn main() -> Result<()> {
                         // TODO: Bundle transactions and send in the next available blocks
                     }
                 }
-            } else if let TransactionType::LIGHT = transaction_type {
+            } else if let TransactionType::HEAVY = transaction_type {
                 match opt.num_blocks {
                     Some(num_blocks) => {
                         // TODO: Bundle transactions and send in the {num_blocks} blocks based on different cases
@@ -166,12 +173,9 @@ async fn main() -> Result<()> {
             }
 
             // Show the funder's final balance at the end
-            let funder_balance_wei_final = provider.get_balance(funder_address, None).await?;
+            let funder_balance_wei_final = client.get_balance(funder_address, None).await?;
             let funder_balance_tssc_final = wei_to_tssc_string(funder_balance_wei_final);
-            println!(
-                "\n=====\nFunder's final balance: {} TSSC.",
-                funder_balance_tssc_final
-            );
+            println!("\n=====\nFunder's final balance: {} TSSC.", funder_balance_tssc_final);
             let spent_bal_tssc = wei_to_tssc_f64(
                 funder_balance_wei_initial
                     .checked_sub(funder_balance_wei_final)
