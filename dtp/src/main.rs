@@ -77,20 +77,8 @@ async fn main() -> Result<()> {
             // get the .env
             dotenv::from_path("./dtp/.env").expect("Failed to get env variables");
 
-            // get Counter contract address
-            let counter_address =
-                std::env::var("COUNTER").expect("Failed to get \'Counter\' contract address");
-            let counter_address = counter_address.parse::<Address>()?;
-
-            // get Load contract address
-            let load_address =
-                std::env::var("LOAD").expect("Failed to get \'LOAD\' contract address");
-            let load_address = load_address.parse::<Address>()?;
-
-            // get Multicall contract address
-            let multicall_address =
-                std::env::var("MULTICALL").expect("Failed to get \'Multicall\' contract address");
-            let multicall_address = multicall_address.parse::<Address>()?;
+            let (counter_address, load_address, multicall_address) =
+                get_contract_addresses_from_env().await?;
 
             // connect to parsed Node RPC URL
             let provider = Provider::<Http>::try_from(opt.rpc_url)
@@ -99,60 +87,25 @@ async fn main() -> Result<()> {
             // Create a shared reference across threads (in each `.await` call). looks synchronous, but many async calls are made here.
             let client = Arc::new(provider.clone());
 
-            // import private key into wallet (local) to get the address
-            let private_key_bytes = hex::decode(&opt.initial_funded_account_private_key)?;
-            let funder_wallet =
-                LocalWallet::from_bytes(&private_key_bytes).expect("Wallet creation failed");
-            let funder_address = funder_wallet.address();
-
-            // get the funder balance (in Wei)
-            let funder_balance_wei_initial = client
-                .get_balance(funder_address, Some(client.get_block_number().await?.into()))
-                .await?;
-            let funder_balance_tssc_initial = wei_to_tssc_string(funder_balance_wei_initial);
-            println!("\nFunder's initial balance: {} TSSC.\n=====", funder_balance_tssc_initial);
-
-            // calculate the required balance (in Wei)
-            let required_balance: U256 = U256::from(
-                opt.funding_amount
-                    .checked_mul(opt.num_accounts.into())
-                    .expect("Error in subtraction of difference amount"),
-            );
-
-            // check for sufficient balance in funder's account
-            assert!(
-                funder_balance_wei_initial > required_balance,
-                "{}",
-                &format!(
-                    "funder has insufficient balance by {:?}",
-                    required_balance.checked_sub(funder_balance_wei_initial)
+            // Get funder wallet after importing funder private key and also check for required funder balance
+            // in order to transfer the funds to the newly created accounts.
+            let (funder_wallet, funder_address, funder_balance_wei_initial) =
+                get_funder_wallet_and_check_required_balance(
+                    client.clone(),
+                    opt.initial_funded_account_private_key,
+                    opt.funding_amount,
+                    opt.num_accounts,
                 )
-            );
+                .await?;
 
-            // generate some new accounts and send funds to each of them
-            let mut wallet_addresses = Vec::<Address>::new();
-            let mut wallet_priv_keys = Vec::<String>::new();
-            let mut signers: Vec<Wallet<SigningKey>> = Vec::new();
-            // generate multiple accounts based on the parsed number.
-            for i in 0..opt.num_accounts {
-                let mut rng: rand::rngs::ThreadRng = thread_rng();
-                let wallet = LocalWallet::new(&mut rng);
-                // println!("Successfully created new keypair.");
-                let pub_key = wallet.address();
-                println!("\nAddress[{i}]:     {:?}", pub_key);
-                // TODO: [OPTIONAL] save the keypair into a local file or show in the output. Create a CLI flag like --to-console/--to-file
-                let priv_key = format!("0x{}", hex::encode(wallet.signer().to_bytes()));
-                println!("Private key[{i}]: {}", priv_key);
-                signers.push(wallet);
-                wallet_addresses.push(pub_key);
-                wallet_priv_keys.push(priv_key);
-
-                // transfer funds
-                // TODO: send as bundle outside the for-loop. create a array of signed tx in this loop.
-                transfer_tssc(&provider, &funder_wallet, pub_key, U256::from(opt.funding_amount))
-                    .await
-                    .expect(&format!("error in sending fund to {}", pub_key));
-            }
+            // generate new accounts and transfer TSSC
+            let signers = gen_wallets_transfer_tssc(
+                client.clone(),
+                opt.num_accounts,
+                funder_wallet,
+                opt.funding_amount,
+            )
+            .await?;
 
             // handle light/heavy txs
             if let TransactionType::LIGHT = transaction_type {
@@ -198,15 +151,7 @@ async fn main() -> Result<()> {
             }
 
             // Show the funder's final balance at the end
-            let funder_balance_wei_final = client.get_balance(funder_address, None).await?;
-            let funder_balance_tssc_final = wei_to_tssc_string(funder_balance_wei_final);
-            println!("\n=====\nFunder's final balance: {} TSSC.", funder_balance_tssc_final);
-            let spent_bal_tssc = wei_to_tssc_f64(
-                funder_balance_wei_initial
-                    .checked_sub(funder_balance_wei_final)
-                    .expect("Invalid sub op."),
-            );
-            println!("Funder spent: {:.18} TSSC", spent_bal_tssc);
+            show_funder_final_balance(client, funder_address, funder_balance_wei_initial).await?;
         }
         Err(e) => {
             bail!("{}", e);

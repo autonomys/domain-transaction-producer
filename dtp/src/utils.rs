@@ -1,17 +1,17 @@
 use bindings::counter::Counter;
 use ethers::{
-    core::k256::ecdsa::SigningKey,
+    core::{k256::ecdsa::SigningKey, rand::thread_rng},
     prelude::*,
     signers::Wallet,
     types::transaction::{eip2718::TypedTransaction, eip2930::AccessList},
-    utils::format_units,
+    utils::{format_units, hex},
 };
 use futures::future::join_all;
 use std::sync::Arc;
 
 /// Transfer TSSC function
 pub(crate) async fn transfer_tssc(
-    provider: &Provider<Http>,
+    client: Arc<Provider<Http>>,
     from_wallet: &Wallet<SigningKey>,
     to: Address,
     amount: U256,
@@ -19,7 +19,7 @@ pub(crate) async fn transfer_tssc(
     let from = from_wallet.address();
 
     // let balance_before = provider.get_balance(from, None).await?;
-    let nonce1 = provider.get_transaction_count(from, None).await?;
+    let nonce1 = client.get_transaction_count(from, None).await?;
 
     // 1. create a tx
     println!("Creating tx...");
@@ -32,8 +32,8 @@ pub(crate) async fn transfer_tssc(
         nonce: Some(nonce1),
         access_list: AccessList(vec![]),
         max_priority_fee_per_gas: None,
-        max_fee_per_gas: Some(provider.get_gas_price().await?),
-        chain_id: Some(provider.get_chainid().await?.as_u64().into()),
+        max_fee_per_gas: Some(client.get_gas_price().await?),
+        chain_id: Some(client.get_chainid().await?.as_u64().into()),
     });
     // println!("\nTyped tx: {:?}", typed_tx);
     // println!("\nTyped tx hash: {:?}", typed_tx.sighash());
@@ -50,7 +50,7 @@ pub(crate) async fn transfer_tssc(
 
     // 4. send the raw transaction
     println!("Sending raw tx...");
-    let tx_receipt = provider
+    let tx_receipt = client
         // `eth_sendRawTransaction` is run
         .send_raw_transaction(rlp_encoded_tx_bytes)
         .await
@@ -61,13 +61,13 @@ pub(crate) async fn transfer_tssc(
     println!(
         "Funds sent to \'{}\', which incurred a gas fee of \'{} TSSC\' has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
         to,
-        get_gas_cost(provider, &tx_receipt).await?,
+        get_gas_cost(&client, &tx_receipt).await?,
         tx_receipt.transaction_hash,
         tx_receipt.transaction_index,
         tx_receipt.block_number.unwrap()
     );
 
-    let nonce2 = provider.get_transaction_count(from, None).await?;
+    let nonce2 = client.get_transaction_count(from, None).await?;
     assert!(nonce2 > nonce1, "Sender's nonce must be incremented after each tx");
 
     // CLEANUP: remove later (if not required)
@@ -318,4 +318,114 @@ pub(crate) async fn multicall_heavy_txs(
     signers: Vec<Wallet<SigningKey>>,
 ) {
     // TODO:
+}
+
+/// Get contract addresses from env variables from `.env` file
+pub(crate) async fn get_contract_addresses_from_env() -> eyre::Result<(Address, Address, Address)> {
+    // get Counter contract address
+    let counter_address =
+        std::env::var("COUNTER").expect("Failed to get \'Counter\' contract address");
+    let counter_address = counter_address.parse::<Address>()?;
+
+    // get Load contract address
+    let load_address = std::env::var("LOAD").expect("Failed to get \'LOAD\' contract address");
+    let load_address = load_address.parse::<Address>()?;
+
+    // get Multicall contract address
+    let multicall_address =
+        std::env::var("MULTICALL").expect("Failed to get \'Multicall\' contract address");
+    let multicall_address = multicall_address.parse::<Address>()?;
+
+    Ok((counter_address, load_address, multicall_address))
+}
+
+/// Get funder wallet after importing funder private key and also check for required funder balance
+/// in order to transfer the funds to the newly created accounts.
+pub(crate) async fn get_funder_wallet_and_check_required_balance(
+    client: Arc<Provider<Http>>,
+    initial_funded_account_private_key: String,
+    funding_amount: u64,
+    num_accounts: u32,
+) -> eyre::Result<(Wallet<SigningKey>, Address, U256)> {
+    // import private key into wallet (local) to get the address
+    let private_key_bytes = hex::decode(&initial_funded_account_private_key)?;
+    let funder_wallet =
+        LocalWallet::from_bytes(&private_key_bytes).expect("Wallet creation failed");
+    let funder_address = funder_wallet.address();
+
+    // get the funder balance (in Wei)
+    let funder_balance_wei_initial = client.get_balance(funder_address, None).await?;
+    let funder_balance_tssc_initial = wei_to_tssc_string(funder_balance_wei_initial);
+    println!("\nFunder's initial balance: {} TSSC.\n=====", funder_balance_tssc_initial);
+
+    // calculate the required balance (in Wei)
+    let required_balance = U256::from(
+        funding_amount
+            .checked_mul(num_accounts.into())
+            .expect("Error in subtraction of difference amount"),
+    );
+
+    // check for sufficient balance in funder's account
+    assert!(
+        funder_balance_wei_initial > required_balance,
+        "{}",
+        &format!(
+            "funder has insufficient balance by {:?}",
+            required_balance.checked_sub(funder_balance_wei_initial)
+        )
+    );
+
+    Ok((funder_wallet, funder_address, funder_balance_wei_initial))
+}
+
+/// generate new accounts and transfer TSSC
+pub(crate) async fn gen_wallets_transfer_tssc(
+    client: Arc<Provider<Http>>,
+    num_accounts: u32,
+    funder_wallet: Wallet<SigningKey>,
+    funding_amount: u64,
+) -> eyre::Result<Vec<Wallet<SigningKey>>> {
+    // generate some new accounts and send funds to each of them
+    let mut wallet_addresses = Vec::<Address>::new();
+    let mut wallet_priv_keys = Vec::<String>::new();
+    let mut signers: Vec<Wallet<SigningKey>> = Vec::new();
+
+    // generate multiple accounts based on the parsed number.
+    for i in 0..num_accounts {
+        let mut rng: rand::rngs::ThreadRng = thread_rng();
+        let wallet = LocalWallet::new(&mut rng);
+        // println!("Successfully created new keypair.");
+        let pub_key = wallet.address();
+        println!("\nAddress[{i}]:     {:?}", pub_key);
+        // TODO: [OPTIONAL] save the keypair into a local file or show in the output. Create a CLI flag like --to-console/--to-file
+        let priv_key = format!("0x{}", hex::encode(wallet.signer().to_bytes()));
+        println!("Private key[{i}]: {}", priv_key);
+        signers.push(wallet);
+        wallet_addresses.push(pub_key);
+        wallet_priv_keys.push(priv_key);
+
+        // transfer funds
+        // TODO: send as bundle outside the for-loop. create a array of signed tx in this loop.
+        transfer_tssc(client.clone(), &funder_wallet, pub_key, U256::from(funding_amount))
+            .await
+            .expect(&format!("error in sending fund to {}", pub_key));
+    }
+    Ok(signers)
+}
+
+/// Show the funder's final balance at the end
+pub(crate) async fn show_funder_final_balance(
+    client: Arc<Provider<Http>>,
+    funder_address: Address,
+    funder_balance_wei_initial: U256,
+) -> eyre::Result<()> {
+    let funder_balance_wei_final = client.get_balance(funder_address, None).await?;
+    let funder_balance_tssc_final = wei_to_tssc_string(funder_balance_wei_final);
+    println!("\n=====\nFunder's final balance: {} TSSC.", funder_balance_tssc_final);
+    let spent_bal_tssc = wei_to_tssc_f64(
+        funder_balance_wei_initial.checked_sub(funder_balance_wei_final).expect("Invalid sub op."),
+    );
+    println!("Funder spent: {:.18} TSSC", spent_bal_tssc);
+
+    Ok(())
 }
