@@ -3,7 +3,6 @@
 #![allow(dead_code)]
 
 // imports
-use ethers::contract::Contract;
 use ethers::{
     core::k256::ecdsa::SigningKey, core::rand::thread_rng, prelude::*, signers::LocalWallet,
     types::U256, utils::hex,
@@ -12,8 +11,7 @@ use eyre::{bail, Result};
 use std::{str::FromStr, sync::Arc};
 use structopt::StructOpt;
 
-use bindings::counter::COUNTER_ABI;
-
+/// utils
 mod utils;
 use utils::*;
 

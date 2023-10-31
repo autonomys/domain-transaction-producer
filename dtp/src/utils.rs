@@ -1,14 +1,12 @@
-use std::sync::Arc;
-
-use bindings::counter::{self, Counter, COUNTER_ABI};
-use bindings::load::{Load, LOAD_ABI};
-use ethers::core::k256::ecdsa::SigningKey;
+use bindings::counter::Counter;
 use ethers::{
+    core::k256::ecdsa::SigningKey,
     prelude::*,
     signers::Wallet,
     types::transaction::{eip2718::TypedTransaction, eip2930::AccessList},
     utils::format_units,
 };
+use std::sync::Arc;
 
 /// Transfer TSSC function
 pub(crate) async fn transfer_tssc(
