@@ -2,7 +2,7 @@
 
 A CLI tool to produce domain transactions for Subspace EVM Network.
 
-## [CLI Usage](./cli/README.md)
+## [DTP CLI](./dtp)
 
 ## [Subspace EVM Playground](./contracts/)
 
