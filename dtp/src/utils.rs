@@ -6,6 +6,7 @@ use ethers::{
     types::transaction::{eip2718::TypedTransaction, eip2930::AccessList},
     utils::format_units,
 };
+use futures::future::join_all;
 use std::sync::Arc;
 
 /// Transfer TSSC function
@@ -285,12 +286,19 @@ pub(crate) async fn multicall_light_txs_2(
         .expect("Unable to get Counter number before calls.");
     println!("\nNumber stored in \'Counter\' before calls: {}", num_before);
 
+    let mut calls = Vec::new();
     // send tx in iteration
     for signer in &signers {
         // all accounts are incrementing
         // NOTE: there could be many patterns (with cases) for sending different combination of functions for multiple senders
-        counter_increment(client.clone(), counter_address, signer.clone()).await?
+        // collect all contract setter calls into a vec of futures. So, not awaited on each future in this loop.
+        calls.push(counter_increment(client.clone(), counter_address, signer.clone()));
     }
+
+    // async calls awaited all at once so as to try to put as many txs into a/few blocks than
+    // sending each tx into each block.
+    // Here, senders are different for each tx. So, not a problem of dependency on each other.
+    join_all(calls).await;
 
     // get the number value before calls
     let num_after = counter_get_number(client.clone(), counter_address)

@@ -736,6 +736,7 @@ dependencies = [
  "dotenv",
  "ethers",
  "eyre",
+ "futures",
  "serde_json",
  "structopt",
  "tokio",

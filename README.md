@@ -4,6 +4,8 @@ A CLI tool to produce domain transactions for Subspace EVM Network.
 
 ## [DTP CLI](./dtp)
 
+> If CLI commands run from the root of the repository, the command is `$ cargo run -p dtp -- --help`, otherwise, `$ cargo run -- --help` from inside [dtp/](./dtp/) folder.
+
 ## [Subspace EVM Playground](./contracts/)
 
 ## [Subspace EVM Contracts Bindings](./bindings/)
