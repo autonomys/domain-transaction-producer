@@ -18,6 +18,8 @@ mod utils;
 use utils::*;
 
 /// TODO: able to parse like "1 ETH", "1000 Wei"
+/// TODO: `transaction_type` can be made as optional in cases where funds are to be
+/// transferred to newly created accounts
 #[derive(StructOpt, Debug)]
 #[structopt(name = "dtp", about = "Domain Transaction Producer")]
 /// CLI params
