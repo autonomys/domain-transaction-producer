@@ -1,4 +1,4 @@
-use bindings::counter::Counter;
+use bindings::{counter::Counter, fund::Fund};
 use ethers::{
     core::{k256::ecdsa::SigningKey, rand::thread_rng},
     prelude::*,
@@ -8,77 +8,6 @@ use ethers::{
 };
 use futures::future::join_all;
 use std::sync::Arc;
-
-/// Transfer TSSC function
-pub(crate) async fn transfer_tssc(
-    client: Arc<Provider<Http>>,
-    from_wallet: &Wallet<SigningKey>,
-    to: Address,
-    amount: U256,
-) -> eyre::Result<()> {
-    let from = from_wallet.address();
-
-    // let balance_before = provider.get_balance(from, None).await?;
-    let nonce1 = client.get_transaction_count(from, None).await?;
-
-    // 1. create a tx
-    println!("Creating tx...");
-    let typed_tx = TypedTransaction::Eip1559(Eip1559TransactionRequest {
-        from: Some(from),
-        to: Some(to.into()),
-        gas: Some(U256::from(21000)),
-        value: Some(U256::from(amount)),
-        data: None,
-        nonce: Some(nonce1),
-        access_list: AccessList(vec![]),
-        max_priority_fee_per_gas: None,
-        max_fee_per_gas: Some(client.get_gas_price().await?),
-        chain_id: Some(client.get_chainid().await?.as_u64().into()),
-    });
-    // println!("\nTyped tx: {:?}", typed_tx);
-    // println!("\nTyped tx hash: {:?}", typed_tx.sighash());
-
-    // 2. sign the tx
-    println!("Signing tx...");
-    let signature = from_wallet.sign_transaction(&typed_tx).await?;
-    // println!("\nSignature: {:?}", signature);
-
-    // 3. serialize the signed tx to get the raw tx
-    // RLP encoding has to be done as `Bytes` (ethers::types::Bytes) array
-    let rlp_encoded_tx_bytes = typed_tx.rlp_signed(&signature);
-    // println!("\nRLP encoded tx bytes: {:?}", rlp_encoded_tx_bytes);
-
-    // 4. send the raw transaction
-    println!("Sending raw tx...");
-    let tx_receipt = client
-        // `eth_sendRawTransaction` is run
-        .send_raw_transaction(rlp_encoded_tx_bytes)
-        .await
-        .expect("Failure in raw tx [1]")
-        .await
-        .expect("Failure in raw tx [2]")
-        .expect("Failure in getting tx receipt");
-    println!(
-        "Funds sent to \'{}\', which incurred a gas fee of \'{} TSSC\' has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
-        to,
-        get_gas_cost(&client, &tx_receipt).await?,
-        tx_receipt.transaction_hash,
-        tx_receipt.transaction_index,
-        tx_receipt.block_number.unwrap()
-    );
-
-    let nonce2 = client.get_transaction_count(from, None).await?;
-    assert!(nonce2 > nonce1, "Sender's nonce must be incremented after each tx");
-
-    // CLEANUP: remove later (if not required)
-    // let balance_after = provider.get_balance(from, None).await?;
-    // assert!(balance_after < balance_before);
-
-    // println!("{} has balance before: {balance_before}", from);
-    // println!("{} has balance after: {balance_after}", from);
-
-    Ok(())
-}
 
 /// Convert Wei to TSSC (in String)
 pub(crate) fn wei_to_tssc_string(bal_wei: U256) -> String {
@@ -321,7 +250,8 @@ pub(crate) async fn multicall_heavy_txs(
 }
 
 /// Get contract addresses from env variables from `.env` file
-pub(crate) async fn get_contract_addresses_from_env() -> eyre::Result<(Address, Address, Address)> {
+pub(crate) async fn get_contract_addresses_from_env(
+) -> eyre::Result<(Address, Address, Address, Address)> {
     // get Counter contract address
     let counter_address =
         std::env::var("COUNTER").expect("Failed to get \'Counter\' contract address");
@@ -336,7 +266,11 @@ pub(crate) async fn get_contract_addresses_from_env() -> eyre::Result<(Address, 
         std::env::var("MULTICALL").expect("Failed to get \'Multicall\' contract address");
     let multicall_address = multicall_address.parse::<Address>()?;
 
-    Ok((counter_address, load_address, multicall_address))
+    // get Fund contract address
+    let fund_address = std::env::var("FUND").expect("Failed to get \'Fund\' contract address");
+    let fund_address = fund_address.parse::<Address>()?;
+
+    Ok((counter_address, load_address, multicall_address, fund_address))
 }
 
 /// Get funder wallet after importing funder private key and also check for required funder balance
@@ -384,6 +318,7 @@ pub(crate) async fn gen_wallets_transfer_tssc(
     num_accounts: u32,
     funder_wallet: Wallet<SigningKey>,
     funding_amount: u64,
+    fund_contract_addr: Address,
 ) -> eyre::Result<Vec<Wallet<SigningKey>>> {
     // generate some new accounts and send funds to each of them
     let mut wallet_addresses = Vec::<Address>::new();
@@ -404,13 +339,151 @@ pub(crate) async fn gen_wallets_transfer_tssc(
         wallet_addresses.push(pub_key);
         wallet_priv_keys.push(priv_key);
 
-        // transfer funds
-        // TODO: send as bundle outside the for-loop. create a array of signed tx in this loop.
-        transfer_tssc(client.clone(), &funder_wallet, pub_key, U256::from(funding_amount))
-            .await
-            .expect(&format!("error in sending fund to {}", pub_key));
+        // M-1: transfer funds using API call
+        // Recommended for sending each transfer as tx. Hence, funder needs to sign for each transfer.
+        // transfer_tssc_single(client.clone(), &funder_wallet, pub_key, U256::from(funding_amount))
+        //     .await
+        //     .expect(&format!("error in sending fund to {}", pub_key));
     }
+
+    println!(
+        "\nCalling \'Fund\' contract\'s \'transfer_tssc_to_many\' \nmethod for sending funds in bulk..."
+    );
+
+    // M-2: transfer funds using 'Fund' contract
+    // Recommended for bulk transfer from single account.
+    // Also all transfers added via single tx i.e. funder's single signature.
+    transfer_tssc_bulk(
+        client.clone(),
+        &funder_wallet,
+        wallet_addresses.clone(),
+        U256::from(funding_amount),
+        fund_contract_addr,
+    )
+    .await?;
+
     Ok(signers)
+}
+
+/// Transfer TSSC to single account via eth API call method
+/// NOTE: For multiple receiver accounts, we can also use
+/// the contract "Fund"'s `transferTsscToMany`
+/// One can also leverage the contract "Fund"'s `transferTsscToSingle`
+/// function.
+pub(crate) async fn transfer_tssc_single(
+    client: Arc<Provider<Http>>,
+    from_wallet: &Wallet<SigningKey>,
+    to: Address,
+    amount: U256,
+) -> eyre::Result<()> {
+    let from = from_wallet.address();
+
+    // let balance_before = provider.get_balance(from, None).await?;
+    let nonce1 = client.get_transaction_count(from, None).await?;
+
+    // 1. create a tx
+    println!("Creating tx...");
+    let typed_tx = TypedTransaction::Eip1559(Eip1559TransactionRequest {
+        from: Some(from),
+        to: Some(to.into()),
+        gas: Some(U256::from(21000)),
+        value: Some(U256::from(amount)),
+        data: None,
+        nonce: Some(nonce1),
+        access_list: AccessList(vec![]),
+        max_priority_fee_per_gas: None,
+        max_fee_per_gas: Some(client.get_gas_price().await?),
+        chain_id: Some(client.get_chainid().await?.as_u64().into()),
+    });
+    // println!("\nTyped tx: {:?}", typed_tx);
+    // println!("\nTyped tx hash: {:?}", typed_tx.sighash());
+
+    // 2. sign the tx
+    println!("Signing tx...");
+    let signature = from_wallet.sign_transaction(&typed_tx).await?;
+    // println!("\nSignature: {:?}", signature);
+
+    // 3. serialize the signed tx to get the raw tx
+    // RLP encoding has to be done as `Bytes` (ethers::types::Bytes) array
+    let rlp_encoded_tx_bytes = typed_tx.rlp_signed(&signature);
+    // println!("\nRLP encoded tx bytes: {:?}", rlp_encoded_tx_bytes);
+
+    // 4. send the raw transaction
+    println!("Sending raw tx...");
+    let tx_receipt = client
+        // `eth_sendRawTransaction` is run
+        .send_raw_transaction(rlp_encoded_tx_bytes)
+        .await
+        .expect("Failure in getting pending tx")
+        .await
+        .expect("Failure in getting Result type")
+        .expect("Failure in getting tx receipt");
+    println!(
+        "Funds sent to \'{}\', which incurred a gas fee of \'{} TSSC\' has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
+        to,
+        get_gas_cost(&client, &tx_receipt).await?,
+        tx_receipt.transaction_hash,
+        tx_receipt.transaction_index,
+        tx_receipt.block_number.unwrap()
+    );
+
+    let nonce2 = client.get_transaction_count(from, None).await?;
+    assert!(nonce2 > nonce1, "Sender's nonce must be incremented after each tx");
+
+    // CLEANUP: remove later (if not required)
+    // let balance_after = provider.get_balance(from, None).await?;
+    // assert!(balance_after < balance_before);
+
+    // println!("{} has balance before: {balance_before}", from);
+    // println!("{} has balance after: {balance_after}", from);
+
+    Ok(())
+}
+
+/// Transfer TSSC in bulk
+pub(crate) async fn transfer_tssc_bulk(
+    client: Arc<Provider<Http>>,
+    from_wallet: &Wallet<SigningKey>,
+    tos: Vec<Address>,
+    funding_amount: U256,
+    fund_contract_addr: Address,
+) -> eyre::Result<()> {
+    // create a middleware client with signature from signer & provider
+    let client_middleware = SignerMiddleware::new(
+        client.clone(),
+        from_wallet.clone().with_chain_id(client.get_chainid().await?.as_u64()),
+    );
+
+    // clone the client (if multiple use)
+    let client_middleware = Arc::new(client_middleware);
+
+    // get a contract
+    let fund_contract = Fund::new(fund_contract_addr, client_middleware);
+
+    // send a transaction with setter function
+    let tx_receipt = fund_contract
+        .transfer_tssc_to_many(tos.clone())
+        .value(
+            funding_amount
+                .checked_mul(U256::from(tos.clone().len()))
+                .expect("Error in multiplying fund amount w receivers len."),
+        )
+        .send()
+        .await
+        // FIXME: Failure in getting pending tx: Revert(Bytes(0x))
+        .expect("Failure in getting pending tx")
+        .await?
+        .expect("Failure in \'transferTsscToMany\' of Fund contract");
+    println!(
+        "\n\'{}\' sent funds to newly created accounts, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
+        tx_receipt.from,
+        get_gas_cost(&client.clone(), &tx_receipt).await?,
+        tx_receipt.transaction_hash,
+        tx_receipt.transaction_index,
+        tx_receipt.block_number.unwrap()
+    );
+
+    Ok(())
 }
 
 /// Show the funder's final balance at the end
