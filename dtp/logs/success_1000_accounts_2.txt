@@ -8,7 +8,7 @@ Command:
 $ cargo run -p dtp  -- \                        ⏎
 --funding-amount 441000000000000 \
 --initial-funded-account-private-key $FUNDER_PRIVATE_KEY \
---num-accounts 2000 \
+--num-accounts 1000 \
 --rpc-url $SUBSPACE_EVM_RPC_URL \
 --transaction-type light
 ```

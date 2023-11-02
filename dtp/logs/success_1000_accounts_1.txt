@@ -1,3 +1,17 @@
+Status: SUCCESS
+===============
+
+Command:
+========
+
+```sh
+$ cargo run -p dtp  -- \                        ⏎
+--funding-amount 441000000000000 \
+--initial-funded-account-private-key $FUNDER_PRIVATE_KEY \
+--num-accounts 1000 \
+--rpc-url $SUBSPACE_EVM_RPC_URL \
+--transaction-type light
+```
 
 Funder's initial balance: 1.542962996521428840 TSSC.
 =====
