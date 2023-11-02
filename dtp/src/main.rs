@@ -77,7 +77,7 @@ async fn main() -> Result<()> {
             // get the .env
             dotenv::from_path("./dtp/.env").expect("Failed to get env variables");
 
-            let (counter_address, load_address, multicall_address) =
+            let (counter_address, load_address, multicall_address, fund_contract_addr) =
                 get_contract_addresses_from_env().await?;
 
             // connect to parsed Node RPC URL
@@ -104,6 +104,7 @@ async fn main() -> Result<()> {
                 opt.num_accounts,
                 funder_wallet,
                 opt.funding_amount,
+                fund_contract_addr,
             )
             .await?;
 
@@ -118,6 +119,10 @@ async fn main() -> Result<()> {
                         // 3. num_accounts > num_blocks
                     }
                     None => {
+                        println!("\n=====================");
+                        println!("Sending Light txs...");
+                        println!("=====================");
+
                         // FIXME: Bundle transactions and send in the next available blocks
                         // Approach-1: Only one sender account
                         // multicall_light_txs(
@@ -145,6 +150,9 @@ async fn main() -> Result<()> {
                         // 3. num_accounts > num_blocks
                     }
                     None => {
+                        println!("=====================");
+                        println!("Sending Heavy txs...");
+                        println!("=====================");
                         // TODO: Bundle transactions and send in the next available blocks
                     }
                 }
