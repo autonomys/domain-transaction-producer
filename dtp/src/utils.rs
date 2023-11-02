@@ -21,11 +21,6 @@ pub(crate) fn wei_to_tssc_f64(bal_wei: U256) -> f64 {
     bal_tssc
 }
 
-/// sending a bundle of txs
-fn bundle_tx() {
-    todo!("bundle txs using flashbot mechanism.")
-}
-
 /// calculate tx gas cost from `gas_price` & `gas_spent` for a tx
 async fn get_gas_cost(
     provider: &Provider<Http>,
@@ -59,6 +54,7 @@ pub(crate) async fn counter_get_number(
 }
 /// set Counter number
 /// NOTE: signer needed as it incurs gas fees.
+#[allow(dead_code)]
 pub(crate) async fn counter_set_number(
     client: Arc<Provider<Http>>,
     counter_address: Address,
@@ -140,6 +136,7 @@ pub(crate) async fn counter_increment(
 /// As LIGHT transaction type, multicall particular function
 /// let's say `increment` successively done by each new accounts w/o
 /// `num_block` cli arg.
+#[allow(dead_code)]
 pub(crate) async fn multicall_light_txs_1(
     client: Arc<Provider<Http>>,
     multicall_address: Address,
