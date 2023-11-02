@@ -221,7 +221,7 @@ pub(crate) async fn multicall_light_txs_2(
         // all accounts are incrementing
         // NOTE: there could be many patterns (with cases) for sending different combination of functions for multiple senders
         // collect all contract setter calls into a vec of futures. So, not awaited on each future in this loop.
-        calls.push(counter_increment(client.clone(), counter_address, signer.clone()));
+        calls.push(counter_increment(client.to_owned(), counter_address, signer.to_owned()));
     }
 
     // async calls awaited all at once so as to try to put as many txs into a/few blocks than
@@ -338,16 +338,10 @@ pub(crate) async fn gen_wallets_transfer_tssc(
         signers.push(wallet);
         wallet_addresses.push(pub_key);
         wallet_priv_keys.push(priv_key);
-
-        // M-1: transfer funds using API call
-        // Recommended for sending each transfer as tx. Hence, funder needs to sign for each transfer.
-        // transfer_tssc_single(client.clone(), &funder_wallet, pub_key, U256::from(funding_amount))
-        //     .await
-        //     .expect(&format!("error in sending fund to {}", pub_key));
     }
 
     println!(
-        "\nCalling \'Fund\' contract\'s \'transfer_tssc_to_many\' \nmethod for sending funds in bulk..."
+        "\nCalling \'Fund\' contract\'s \'transferTsscToMany\' \nmethod for sending funds in bulk..."
     );
 
     // M-2: transfer funds using 'Fund' contract
@@ -363,81 +357,6 @@ pub(crate) async fn gen_wallets_transfer_tssc(
     .await?;
 
     Ok(signers)
-}
-
-/// Transfer TSSC to single account via eth API call method
-/// NOTE: For multiple receiver accounts, we can also use
-/// the contract "Fund"'s `transferTsscToMany`
-/// One can also leverage the contract "Fund"'s `transferTsscToSingle`
-/// function.
-pub(crate) async fn transfer_tssc_single(
-    client: Arc<Provider<Http>>,
-    from_wallet: &Wallet<SigningKey>,
-    to: Address,
-    amount: U256,
-) -> eyre::Result<()> {
-    let from = from_wallet.address();
-
-    // let balance_before = provider.get_balance(from, None).await?;
-    let nonce1 = client.get_transaction_count(from, None).await?;
-
-    // 1. create a tx
-    println!("Creating tx...");
-    let typed_tx = TypedTransaction::Eip1559(Eip1559TransactionRequest {
-        from: Some(from),
-        to: Some(to.into()),
-        gas: Some(U256::from(21000)),
-        value: Some(U256::from(amount)),
-        data: None,
-        nonce: Some(nonce1),
-        access_list: AccessList(vec![]),
-        max_priority_fee_per_gas: None,
-        max_fee_per_gas: Some(client.get_gas_price().await?),
-        chain_id: Some(client.get_chainid().await?.as_u64().into()),
-    });
-    // println!("\nTyped tx: {:?}", typed_tx);
-    // println!("\nTyped tx hash: {:?}", typed_tx.sighash());
-
-    // 2. sign the tx
-    println!("Signing tx...");
-    let signature = from_wallet.sign_transaction(&typed_tx).await?;
-    // println!("\nSignature: {:?}", signature);
-
-    // 3. serialize the signed tx to get the raw tx
-    // RLP encoding has to be done as `Bytes` (ethers::types::Bytes) array
-    let rlp_encoded_tx_bytes = typed_tx.rlp_signed(&signature);
-    // println!("\nRLP encoded tx bytes: {:?}", rlp_encoded_tx_bytes);
-
-    // 4. send the raw transaction
-    println!("Sending raw tx...");
-    let tx_receipt = client
-        // `eth_sendRawTransaction` is run
-        .send_raw_transaction(rlp_encoded_tx_bytes)
-        .await
-        .expect("Failure in getting pending tx")
-        .await
-        .expect("Failure in getting Result type")
-        .expect("Failure in getting tx receipt");
-    println!(
-        "Funds sent to \'{}\', which incurred a gas fee of \'{} TSSC\' has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
-        to,
-        get_gas_cost(&client, &tx_receipt).await?,
-        tx_receipt.transaction_hash,
-        tx_receipt.transaction_index,
-        tx_receipt.block_number.unwrap()
-    );
-
-    let nonce2 = client.get_transaction_count(from, None).await?;
-    assert!(nonce2 > nonce1, "Sender's nonce must be incremented after each tx");
-
-    // CLEANUP: remove later (if not required)
-    // let balance_after = provider.get_balance(from, None).await?;
-    // assert!(balance_after < balance_before);
-
-    // println!("{} has balance before: {balance_before}", from);
-    // println!("{} has balance after: {balance_after}", from);
-
-    Ok(())
 }
 
 /// Transfer TSSC in bulk
@@ -470,10 +389,9 @@ pub(crate) async fn transfer_tssc_bulk(
         )
         .send()
         .await
-        // FIXME: Failure in getting pending tx: Revert(Bytes(0x))
         .expect("Failure in getting pending tx")
         .await?
-        .expect("Failure in \'transferTsscToMany\' of Fund contract");
+        .expect("Failure in \'transferTsscToMany\' function of Fund contract");
     println!(
         "\n\'{}\' sent funds to newly created accounts, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
         tx_receipt.from,
