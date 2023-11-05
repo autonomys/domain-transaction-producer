@@ -8,6 +8,7 @@ use ethers::{
     types::U256, utils::hex,
 };
 use eyre::{bail, Result};
+use log::info;
 use std::{str::FromStr, sync::Arc};
 use structopt::StructOpt;
 
@@ -16,8 +17,8 @@ mod utils;
 use utils::*;
 
 /// TODO: able to parse like "1 ETH", "1000 Wei"
-/// TODO: `transaction_type` can be made as optional in cases where funds are to be
-/// transferred to newly created accounts
+/// TODO: `transaction_type` can be made as optional in cases where just need to transfer
+/// funds to newly created accounts share their account details with the set of users as pre-funded account.
 #[derive(StructOpt, Debug)]
 #[structopt(name = "dtp", about = "Domain Transaction Producer")]
 /// CLI params
@@ -77,8 +78,12 @@ async fn main() -> Result<()> {
             // get the .env
             dotenv::from_path("./dtp/.env").expect("Failed to get env variables");
 
-            let (counter_address, load_address, multicall_address, fund_contract_addr) =
-                get_contract_addresses_from_env().await?;
+            // init logger for debugging
+            env_logger::init();
+
+            // get the env variables
+            let (counter_address, load_address, multicall_address, fund_contract_addr, chain_id) =
+                get_env_vars().await?;
 
             // connect to parsed Node RPC URL
             let provider = Provider::<Http>::try_from(opt.rpc_url)
@@ -105,6 +110,7 @@ async fn main() -> Result<()> {
                 funder_wallet,
                 opt.funding_amount,
                 fund_contract_addr,
+                chain_id,
             )
             .await?;
 
@@ -119,25 +125,14 @@ async fn main() -> Result<()> {
                         // 3. num_accounts > num_blocks
                     }
                     None => {
-                        println!("\n=====================");
-                        println!("Sending Light txs...");
-                        println!("=====================");
-
-                        // FIXME: Bundle transactions and send in the next available blocks
-                        // Approach-1: Only one sender account
-                        // multicall_light_txs(
-                        //     client.clone(),
-                        //     multicall_address,
-                        //     counter_address,
-                        //     signers,
-                        // )
-                        // .await.expect("Approach-1 failed.");
-
+                        println!("Sending light transactions...");
                         // Approach-2: All new wallet accounts are sender for each call individually
                         // Say, all of them want to increment
-                        multicall_light_txs_2(client.clone(), counter_address, signers)
+                        multicall_light_txs_2(client.clone(), counter_address, signers, chain_id)
                             .await
                             .expect("Approach-2 failed.");
+
+                        println!("Light transactions sent successfully.")
                     }
                 }
             } else if let TransactionType::HEAVY = transaction_type {
@@ -150,9 +145,6 @@ async fn main() -> Result<()> {
                         // 3. num_accounts > num_blocks
                     }
                     None => {
-                        println!("=====================");
-                        println!("Sending Heavy txs...");
-                        println!("=====================");
                         // TODO: Bundle transactions and send in the next available blocks
                     }
                 }

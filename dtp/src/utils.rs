@@ -7,6 +7,7 @@ use ethers::{
     utils::{format_units, hex},
 };
 use futures::future::join_all;
+use log::info;
 use std::sync::Arc;
 
 // max. no. of txs that can be sent in a batch unlike
@@ -70,12 +71,10 @@ pub(crate) async fn counter_set_number(
     client: Arc<Provider<Http>>,
     counter_address: Address,
     signer: Wallet<SigningKey>,
+    chain_id: u64,
 ) -> eyre::Result<()> {
     // create a middleware client with signature from signer & provider
-    let client_middleware = SignerMiddleware::new(
-        client.clone(),
-        signer.with_chain_id(client.get_chainid().await?.as_u64()),
-    );
+    let client_middleware = SignerMiddleware::new(client.clone(), signer.with_chain_id(chain_id));
 
     // clone the client (if multiple use)
     let client_middleware = Arc::new(client_middleware);
@@ -108,12 +107,10 @@ pub(crate) async fn counter_increment(
     client: Arc<Provider<Http>>,
     counter_address: Address,
     signer: Wallet<SigningKey>,
+    chain_id: u64,
 ) -> eyre::Result<()> {
     // create a middleware client with signature from signer & provider
-    let client_middleware = SignerMiddleware::new(
-        client.clone(),
-        signer.with_chain_id(client.get_chainid().await?.as_u64()),
-    );
+    let client_middleware = SignerMiddleware::new(client.clone(), signer.with_chain_id(chain_id));
 
     // clone the client (if multiple use)
     let client_middleware = Arc::new(client_middleware);
@@ -129,78 +126,8 @@ pub(crate) async fn counter_increment(
         .expect("Failure in getting pending tx")
         .await?
         .expect("Failure in \'increment\' of Counter contract");
-    println!(
-        "\n\'{}\' increment number, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
-        tx_receipt.from,
-        get_gas_cost(&client.clone(), &tx_receipt).await?,
-        tx_receipt.transaction_hash,
-        tx_receipt.transaction_index,
-        tx_receipt.block_number.unwrap()
-    );
-
-    Ok(())
-}
-
-/// Approach-1: Only one sender account
-/// NOTE: LIGHT txs sent as a batch could be signed by single/multiple signer,
-/// but no need when calling any storage value.
-/// As LIGHT transaction type, multicall particular function
-/// let's say `increment` successively done by each new accounts w/o
-/// `num_block` cli arg.
-#[allow(dead_code)]
-pub(crate) async fn multicall_light_txs_1(
-    client: Arc<Provider<Http>>,
-    multicall_address: Address,
-    counter_address: Address,
-    signers: Vec<Wallet<SigningKey>>,
-) -> eyre::Result<()> {
-    // initiate the Multicall instance and add calls one by one in builder style
-    let mut multicall: Multicall<Provider<Http>> =
-        Multicall::<Provider<Http>>::new(client.clone(), Some(multicall_address)).await.unwrap();
-
-    // CLEANUP: remove later
-    // let mut client_middlewares: Vec<SignerMiddleware<Arc<Provider<Http>>, Wallet<SigningKey>>> =
-    // Vec::new();
-
-    // create a middleware client with signature for each signer
-    for _ in signers {
-        // TODO: how to add signer middleware for signer to sign each call & then add to `multicall`
-        // let client_middleware = SignerMiddleware::new(
-        //     client.clone(),
-        //     signer.with_chain_id(client.get_chainid().await?.as_u64()),
-        // );
-
-        // clone the client (if multiple use)
-        // let client_middleware = Arc::new(client_middleware);
-
-        // CLEANUP: remove later
-        // client_middlewares.push(client);
-
-        // get a contract
-        // let counter = Counter::new(counter_address, client_middleware);  // for signer
-        let counter = Counter::new(counter_address, client.clone());
-
-        // note that these [`FunctionCall`]s are futures, and need to be `.await`ed to resolve.
-        // But we will let `Multicall` to take care of that for us
-        let counter_inc_call = counter.increment();
-        // let counter_inc_call =
-        // counter.method::<_, H256>("increment", false).expect("decoding error");
-
-        // add call to the multicall
-        multicall.add_call(counter_inc_call, false);
-    }
-
-    // `await`ing the `send` method waits for the transaction to be broadcast, which also
-    // returns the transaction hash
-    // FIXME: here, the multicall fails due to this error at `.expect("error in....`
-    // ```
-    // thread 'main' panicked at 'error in sending tx:
-    // ContractError(MiddlewareError { e: JsonRpcClientError(JsonRpcError(JsonRpcError { code: -32603, message: "execution fatal: Module(ModuleError { index: 81, error: [0, 0, 0, 0], message: None })", data: None })) })', dtp/src/utils.rs:258:32
-    // ```
-    let tx_receipt =
-        multicall.send().await.expect("error in sending tx").await.expect("tx dropped").unwrap();
-    println!(
-        "\'{}\' sent batch txs via \'multicall\', which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
+    info!(
+        "\'{}\' increment number, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.\n",
         tx_receipt.from,
         get_gas_cost(&client.clone(), &tx_receipt).await?,
         tx_receipt.transaction_hash,
@@ -238,6 +165,7 @@ async fn handle_async_calls_in_batch_light(
     client: Arc<Provider<Http>>,
     counter_address: Address,
     signers: Vec<Wallet<SigningKey>>,
+    chain_id: u64,
 ) -> eyre::Result<()> {
     // iteration in chunk of `MAX_BATCH_SIZE`
     for chunk in signers.chunks(MAX_BATCH_SIZE.into()) {
@@ -245,7 +173,12 @@ async fn handle_async_calls_in_batch_light(
         let mut batch = Vec::new();
 
         for signer in chunk {
-            batch.push(counter_increment(client.to_owned(), counter_address, signer.to_owned()));
+            batch.push(counter_increment(
+                client.to_owned(),
+                counter_address,
+                signer.to_owned(),
+                chain_id,
+            ));
         }
 
         // send txs in batch of 100 (set now, can be adjusted later)
@@ -260,22 +193,28 @@ pub(crate) async fn multicall_light_txs_2(
     client: Arc<Provider<Http>>,
     counter_address: Address,
     signers: Vec<Wallet<SigningKey>>,
+    chain_id: u64,
 ) -> eyre::Result<()> {
     // get the number value before calls
     let num_before = counter_get_number(client.clone(), counter_address)
         .await
         .expect("Unable to get Counter number before calls.");
-    println!("\nNumber stored in \'Counter\' before calls: {}", num_before);
+    info!("Number stored in \'Counter\' before calls: {}\n", num_before);
 
     // Handle async calls in batches where each batch has `MAX_BATCH_SIZE` requests.
-    handle_async_calls_in_batch_light(client.to_owned(), counter_address, signers.to_owned())
-        .await?;
+    handle_async_calls_in_batch_light(
+        client.to_owned(),
+        counter_address,
+        signers.to_owned(),
+        chain_id,
+    )
+    .await?;
 
     // get the number value before calls
     let num_after = counter_get_number(client.clone(), counter_address)
         .await
         .expect("Unable to get Counter number after calls.");
-    println!("\nNumber stored in \'Counter\' after {} calls: {}", signers.clone().len(), num_after);
+    info!("Number stored in \'Counter\' after {} calls: {}\n", signers.clone().len(), num_after);
 
     Ok(())
 }
@@ -288,10 +227,7 @@ pub(crate) async fn load_set_array(
     signer: Wallet<SigningKey>,
 ) -> eyre::Result<()> {
     // create a middleware client with signature from signer & provider
-    let client_middleware = SignerMiddleware::new(
-        client.clone(),
-        signer.with_chain_id(client.get_chainid().await?.as_u64()),
-    );
+    let client_middleware = SignerMiddleware::new(client.clone(), signer);
 
     // clone the client (if multiple use)
     let client_middleware = Arc::new(client_middleware);
@@ -314,8 +250,9 @@ pub(crate) async fn load_set_array(
         .expect("Failure in getting pending tx")
         .await?
         .expect("Failure in \'setArray\' method of Load contract");
-    println!(
-        "\n\'{}\' set Array with count {}, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
+
+    info!(
+        "\'{}\' set Array with count {}, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.\n",
         tx_receipt.from,
         count,
         get_gas_cost(&client.clone(), &tx_receipt).await?,
@@ -368,8 +305,7 @@ pub(crate) async fn multicall_heavy_txs_2(
 }
 
 /// Get contract addresses from env variables from `.env` file
-pub(crate) async fn get_contract_addresses_from_env(
-) -> eyre::Result<(Address, Address, Address, Address)> {
+pub(crate) async fn get_env_vars() -> eyre::Result<(Address, Address, Address, Address, u64)> {
     // get Counter contract address
     let counter_address =
         std::env::var("COUNTER").expect("Failed to get \'Counter\' contract address");
@@ -388,7 +324,11 @@ pub(crate) async fn get_contract_addresses_from_env(
     let fund_address = std::env::var("FUND").expect("Failed to get \'Fund\' contract address");
     let fund_address = fund_address.parse::<Address>()?;
 
-    Ok((counter_address, load_address, multicall_address, fund_address))
+    // get chain id
+    let chain_id = std::env::var("CHAIN_ID").expect("Failed to get \'chain id\'");
+    let chain_id = chain_id.parse::<u64>()?;
+
+    Ok((counter_address, load_address, multicall_address, fund_address, chain_id))
 }
 
 /// Get funder wallet after importing funder private key and also check for required funder balance
@@ -437,6 +377,7 @@ pub(crate) async fn gen_wallets_transfer_tssc(
     funder_wallet: Wallet<SigningKey>,
     funding_amount: u64,
     fund_contract_addr: Address,
+    chain_id: u64,
 ) -> eyre::Result<Vec<Wallet<SigningKey>>> {
     // generate some new accounts and send funds to each of them
     let mut wallet_addresses = Vec::<Address>::new();
@@ -459,7 +400,7 @@ pub(crate) async fn gen_wallets_transfer_tssc(
     }
 
     println!(
-        "\nCalling \'Fund\' contract\'s \'transferTsscToMany\' \nmethod for sending funds in bulk..."
+        "\nCalling \'Fund\' contract\'s \'transferTsscToMany\' method for sending funds in bulk..."
     );
 
     // M-2: transfer funds using 'Fund' contract
@@ -471,6 +412,7 @@ pub(crate) async fn gen_wallets_transfer_tssc(
         wallet_addresses.clone(),
         U256::from(funding_amount),
         fund_contract_addr,
+        chain_id,
     )
     .await?;
 
@@ -484,12 +426,11 @@ pub(crate) async fn transfer_tssc_bulk(
     tos: Vec<Address>,
     funding_amount: U256,
     fund_contract_addr: Address,
+    chain_id: u64,
 ) -> eyre::Result<()> {
     // create a middleware client with signature from signer & provider
-    let client_middleware = SignerMiddleware::new(
-        client.clone(),
-        from_wallet.clone().with_chain_id(client.get_chainid().await?.as_u64()),
-    );
+    let client_middleware =
+        SignerMiddleware::new(client.clone(), from_wallet.clone().with_chain_id(chain_id));
 
     // clone the client (if multiple use)
     let client_middleware = Arc::new(client_middleware);
@@ -511,7 +452,7 @@ pub(crate) async fn transfer_tssc_bulk(
         .await?
         .expect("Failure in \'transferTsscToMany\' function of Fund contract");
     println!(
-        "\n\'{}\' sent funds to newly created accounts, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
+        "\n\'{}\' sent funds to newly created accounts, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.\n",
         tx_receipt.from,
         get_gas_cost(&client.clone(), &tx_receipt).await?,
         tx_receipt.transaction_hash,
@@ -530,7 +471,7 @@ pub(crate) async fn show_funder_final_balance(
 ) -> eyre::Result<()> {
     let funder_balance_wei_final = client.get_balance(funder_address, None).await?;
     let funder_balance_tssc_final = wei_to_tssc_string(funder_balance_wei_final);
-    println!("\n=====\nFunder's final balance: {} TSSC.", funder_balance_tssc_final);
+    println!("=====\nFunder's final balance: {} TSSC.", funder_balance_tssc_final);
     let spent_bal_tssc = wei_to_tssc_f64(
         funder_balance_wei_initial.checked_sub(funder_balance_wei_final).expect("Invalid sub op."),
     );
