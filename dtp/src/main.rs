@@ -168,6 +168,7 @@ async fn main() -> Result<()> {
                             signers,
                             chain_id,
                             max_batch_size,
+                            max_load_count_per_block,
                         )
                         .await
                         .expect("Approach-2 failed when sending heavy txs.");

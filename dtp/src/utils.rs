@@ -132,6 +132,7 @@ async fn handle_async_calls_in_batch_heavy(
     signers: Vec<Wallet<SigningKey>>,
     chain_id: u64,
     max_batch_size: u16,
+    max_load_count_per_block: u16,
 ) -> eyre::Result<()> {
     // iteration in chunk of `MAX_BATCH_SIZE`
     for chunk in signers.chunks(max_batch_size.into()) {
@@ -144,7 +145,7 @@ async fn handle_async_calls_in_batch_heavy(
                 load_address,
                 signer.to_owned(),
                 chain_id,
-                max_batch_size,
+                max_load_count_per_block,
             ));
         }
 
@@ -168,6 +169,7 @@ pub(crate) async fn multicall_heavy_txs_2(
     signers: Vec<Wallet<SigningKey>>,
     chain_id: u64,
     max_batch_size: u16,
+    max_load_count_per_block: u16,
 ) -> eyre::Result<()> {
     // Handle async calls in batches where each batch has `MAX_BATCH_SIZE` requests.
     handle_async_calls_in_batch_heavy(
@@ -176,6 +178,7 @@ pub(crate) async fn multicall_heavy_txs_2(
         signers.to_owned(),
         chain_id,
         max_batch_size,
+        max_load_count_per_block,
     )
     .await?;
 
