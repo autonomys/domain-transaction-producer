@@ -16,6 +16,8 @@ use structopt::StructOpt;
 mod utils;
 use utils::*;
 
+mod contracts;
+
 /// TODO: able to parse like "1 ETH", "1000 Wei"
 /// TODO: `transaction_type` can be made as optional in cases where just need to transfer
 /// funds to newly created accounts share their account details with the set of users as pre-funded account.
@@ -125,6 +127,7 @@ async fn main() -> Result<()> {
                         // 3. num_accounts > num_blocks
                     }
                     None => {
+                        // TODO: The progress bar should be used like ... blinking or something to indicate that the program is still running.
                         println!("Sending light transactions...");
                         // Approach-2: All new wallet accounts are sender for each call individually
                         // Say, all of them want to increment
