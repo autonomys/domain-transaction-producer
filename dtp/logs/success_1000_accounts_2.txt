@@ -1,0 +1,36 @@
+Status: SUCCESS
+===============
+
+Command:
+========
+
+```sh
+$ cargo run -p dtp  -- \                        ⏎
+--funding-amount 441000000000000 \
+--initial-funded-account-private-key $FUNDER_PRIVATE_KEY \
+--num-accounts 1000 \
+--rpc-url $SUBSPACE_EVM_RPC_URL \
+--transaction-type light
+```
+
+Blocks in which light txs added for 1000 accounts:
+=================================================
+#57833
+#57834
+#57839
+#57842
+#57845
+#57846
+#57847
+#57848
+#57849
+#57850
+#57851
+#57852
+#57853
+#57854
+#57857
+#57858
+#57859
+#57863
+#57866
