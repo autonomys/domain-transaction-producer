@@ -1,26 +1,14 @@
 use crate::contracts::{counter_get_number, counter_increment, load_set_array};
-use bindings::{counter::Counter, fund::Fund, load::Load};
+use bindings::fund::Fund;
 use ethers::{
     core::{k256::ecdsa::SigningKey, rand::thread_rng},
     prelude::*,
     signers::Wallet,
-    types::transaction::{eip2718::TypedTransaction, eip2930::AccessList},
     utils::{format_units, hex},
 };
 use futures::future::join_all;
 use log::info;
 use std::sync::Arc;
-
-// max. no. of txs that can be sent in a batch unlike
-// sending all txs at once which is failing due
-// to too many connections at once.
-const MAX_BATCH_SIZE: u16 = 100;
-
-// max. value of `count` in `setArray` method of Load contract
-// which is allowed to be added in a block. So, with this value
-// set, we get the gas cost of (59.98 M) ~60 M per block. Foundry
-// tests done with numerous value in `Load.t.sol` file.
-pub(crate) const MAX_LOAD_COUNT_PER_BLOCK: u16 = 2650;
 
 /// Convert Wei to TSSC (in String)
 pub(crate) fn wei_to_tssc_string(bal_wei: U256) -> String {
@@ -78,9 +66,10 @@ async fn handle_async_calls_in_batch_light(
     counter_address: Address,
     signers: Vec<Wallet<SigningKey>>,
     chain_id: u64,
+    max_batch_size: u16,
 ) -> eyre::Result<()> {
     // iteration in chunks of `MAX_BATCH_SIZE`
-    for chunk in signers.chunks(MAX_BATCH_SIZE.into()) {
+    for chunk in signers.chunks(max_batch_size.into()) {
         // create a batch vec for this chunk
         let mut batch = Vec::with_capacity(chunk.len());
 
@@ -108,6 +97,7 @@ pub(crate) async fn multicall_light_txs_2(
     counter_address: Address,
     signers: Vec<Wallet<SigningKey>>,
     chain_id: u64,
+    max_batch_size: u16,
 ) -> eyre::Result<()> {
     // get the number value before calls
     let num_before = counter_get_number(client.clone(), counter_address)
@@ -121,6 +111,7 @@ pub(crate) async fn multicall_light_txs_2(
         counter_address,
         signers.to_owned(),
         chain_id,
+        max_batch_size,
     )
     .await?;
 
@@ -140,14 +131,21 @@ async fn handle_async_calls_in_batch_heavy(
     load_address: Address,
     signers: Vec<Wallet<SigningKey>>,
     chain_id: u64,
+    max_batch_size: u16,
 ) -> eyre::Result<()> {
     // iteration in chunk of `MAX_BATCH_SIZE`
-    for chunk in signers.chunks(MAX_BATCH_SIZE.into()) {
+    for chunk in signers.chunks(max_batch_size.into()) {
         // create a batch vec for this chunk
         let mut batch = Vec::with_capacity(chunk.len());
 
         for signer in chunk {
-            batch.push(load_set_array(client.clone(), load_address, signer.to_owned(), chain_id));
+            batch.push(load_set_array(
+                client.clone(),
+                load_address,
+                signer.to_owned(),
+                chain_id,
+                max_batch_size,
+            ));
         }
 
         // Send txs in a batch of `MAX_BATCH_SIZE`
@@ -169,16 +167,24 @@ pub(crate) async fn multicall_heavy_txs_2(
     load_address: Address,
     signers: Vec<Wallet<SigningKey>>,
     chain_id: u64,
+    max_batch_size: u16,
 ) -> eyre::Result<()> {
     // Handle async calls in batches where each batch has `MAX_BATCH_SIZE` requests.
-    handle_async_calls_in_batch_heavy(client.clone(), load_address, signers.to_owned(), chain_id)
-        .await?;
+    handle_async_calls_in_batch_heavy(
+        client.clone(),
+        load_address,
+        signers.to_owned(),
+        chain_id,
+        max_batch_size,
+    )
+    .await?;
 
     Ok(())
 }
 
 /// Get contract addresses from env variables from `.env` file
-pub(crate) async fn get_env_vars() -> eyre::Result<(Address, Address, Address, Address, u64)> {
+pub(crate) async fn get_env_vars(
+) -> eyre::Result<(Address, Address, Address, Address, u64, u16, u16)> {
     // get Counter contract address
     let counter_address =
         std::env::var("COUNTER").expect("Failed to get \'Counter\' contract address");
@@ -201,7 +207,24 @@ pub(crate) async fn get_env_vars() -> eyre::Result<(Address, Address, Address, A
     let chain_id = std::env::var("CHAIN_ID").expect("Failed to get \'chain id\'");
     let chain_id = chain_id.parse::<u64>()?;
 
-    Ok((counter_address, load_address, multicall_address, fund_address, chain_id))
+    // get max batch size
+    let max_batch_size = std::env::var("MAX_BATCH_SIZE").expect("Failed to get \'max batch size\'");
+    let max_batch_size = max_batch_size.parse::<u16>()?;
+
+    // get max load count per block
+    let max_load_count_per_block = std::env::var("MAX_LOAD_COUNT_PER_BLOCK")
+        .expect("Failed to get \'max load count per block\'");
+    let max_load_count_per_block = max_load_count_per_block.parse::<u16>()?;
+
+    Ok((
+        counter_address,
+        load_address,
+        multicall_address,
+        fund_address,
+        chain_id,
+        max_batch_size,
+        max_load_count_per_block,
+    ))
 }
 
 /// Get funder wallet after importing funder private key and also check for required funder balance

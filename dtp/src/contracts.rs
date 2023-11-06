@@ -1,13 +1,6 @@
-use crate::utils::{get_gas_cost, MAX_LOAD_COUNT_PER_BLOCK};
-use bindings::{counter::Counter, fund::Fund, load::Load};
-use ethers::{
-    core::{k256::ecdsa::SigningKey, rand::thread_rng},
-    prelude::*,
-    signers::Wallet,
-    types::transaction::{eip2718::TypedTransaction, eip2930::AccessList},
-    utils::{format_units, hex},
-};
-use futures::future::join_all;
+use crate::utils::get_gas_cost;
+use bindings::{counter::Counter, load::Load};
+use ethers::{core::k256::ecdsa::SigningKey, prelude::*, signers::Wallet};
 use log::info;
 use std::sync::Arc;
 
@@ -104,6 +97,7 @@ pub(crate) async fn load_set_array(
     load_address: Address,
     signer: Wallet<SigningKey>,
     chain_id: u64,
+    max_load_count_per_block: u16,
 ) -> eyre::Result<()> {
     // create a middleware client with signature from signer & provider
     let client_middleware = SignerMiddleware::new(client.clone(), signer.with_chain_id(chain_id));
@@ -116,7 +110,7 @@ pub(crate) async fn load_set_array(
 
     // TODO: Here, `count` can be abstracted out as CLI parameter with default value set as may be `1000`
     // considered the highest possible count per block for now.
-    let count = MAX_LOAD_COUNT_PER_BLOCK;
+    let count = max_load_count_per_block;
 
     // send a transaction with setter function
     let tx_receipt = load

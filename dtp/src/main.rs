@@ -1,14 +1,10 @@
-#![allow(unused_imports)]
+// #![allow(unused_imports)]
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
 // imports
-use ethers::{
-    core::k256::ecdsa::SigningKey, core::rand::thread_rng, prelude::*, signers::LocalWallet,
-    types::U256, utils::hex,
-};
+use ethers::prelude::*;
 use eyre::{bail, Result};
-use log::info;
 use std::{str::FromStr, sync::Arc};
 use structopt::StructOpt;
 
@@ -84,8 +80,15 @@ async fn main() -> Result<()> {
             env_logger::init();
 
             // get the env variables
-            let (counter_address, load_address, multicall_address, fund_contract_addr, chain_id) =
-                get_env_vars().await?;
+            let (
+                counter_address,
+                load_address,
+                multicall_address,
+                fund_contract_addr,
+                chain_id,
+                max_batch_size,
+                max_load_count_per_block,
+            ) = get_env_vars().await?;
 
             // connect to parsed Node RPC URL
             let provider = Provider::<Http>::try_from(opt.rpc_url)
@@ -131,9 +134,15 @@ async fn main() -> Result<()> {
                         println!("Sending light transactions...");
                         // Approach-2: All new wallet accounts are sender for each call individually
                         // Say, all of them want to increment
-                        multicall_light_txs_2(client.clone(), counter_address, signers, chain_id)
-                            .await
-                            .expect("Approach-2 failed.");
+                        multicall_light_txs_2(
+                            client.clone(),
+                            counter_address,
+                            signers,
+                            chain_id,
+                            max_batch_size,
+                        )
+                        .await
+                        .expect("Approach-2 failed.");
 
                         println!("Light transactions sent successfully.")
                     }
