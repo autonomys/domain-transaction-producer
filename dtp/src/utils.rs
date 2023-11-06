@@ -40,14 +40,11 @@ async fn get_gas_cost(
 ) -> eyre::Result<f64> {
     let gas_price =
         provider.get_transaction(tx_receipt.transaction_hash).await?.unwrap().gas_price.unwrap();
-    // println!("gas price: {} Wei", gas_price);
 
     let gas_spent = provider.get_transaction(tx_receipt.transaction_hash).await?.unwrap().gas;
-    // println!("gas spent: {}", gas_spent);
 
     let gas_cost_wei = gas_price.checked_mul(gas_spent).unwrap();
     let gas_cost_tssc = wei_to_tssc_f64(gas_cost_wei);
-    // println!("gas cost: {} TSSC", gas_cost_tssc);
 
     Ok(gas_cost_tssc)
 }
@@ -89,10 +86,10 @@ pub(crate) async fn counter_set_number(
         .await?
         .await?
         .expect("Failure in \'set_number\' of Counter contract");
-    println!(
+    info!(
         "\n\'{}\' set number as \'42\', which incurred a gas fee of \'{} TSSC\' has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
         tx_receipt.from,
-        get_gas_cost(&client.clone(), &tx_receipt).await?,
+        get_gas_cost(&client, &tx_receipt).await?,
         tx_receipt.transaction_hash,
         tx_receipt.transaction_index,
         tx_receipt.block_number.unwrap()
@@ -129,7 +126,7 @@ pub(crate) async fn counter_increment(
     info!(
         "\'{}\' increment number, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.\n",
         tx_receipt.from,
-        get_gas_cost(&client.clone(), &tx_receipt).await?,
+        get_gas_cost(&client, &tx_receipt).await?,
         tx_receipt.transaction_hash,
         tx_receipt.transaction_index,
         tx_receipt.block_number.unwrap()
@@ -147,10 +144,10 @@ pub(crate) async fn counter_increment(
 ///
 /// Here, instead of sending `calls` at once via `join_all(calls).await` as shown here:
 /// ```rust
-/// let mut calls = Vec::new();
+/// let mut calls = Vec::with_capacity(signers.len());
 /// for signer in &signers {
 ///     // collect all contract setter calls into a vec of futures. So, not awaited on each future in this loop.
-///     calls.push(counter_increment(client.to_owned(), counter_address, signer.to_owned()));
+///     calls.push(counter_increment(client.clone(), counter_address, signer.to_owned()));
 /// }
 /// // async calls awaited all at once so as to try to put as many txs into a/few blocks than
 /// // sending each tx into each block.
@@ -167,22 +164,24 @@ async fn handle_async_calls_in_batch_light(
     signers: Vec<Wallet<SigningKey>>,
     chain_id: u64,
 ) -> eyre::Result<()> {
-    // iteration in chunk of `MAX_BATCH_SIZE`
+    // iteration in chunks of `MAX_BATCH_SIZE`
     for chunk in signers.chunks(MAX_BATCH_SIZE.into()) {
         // create a batch vec for this chunk
-        let mut batch = Vec::new();
+        let mut batch = Vec::with_capacity(chunk.len());
 
         for signer in chunk {
             batch.push(counter_increment(
-                client.to_owned(),
+                client.clone(),
                 counter_address,
                 signer.to_owned(),
                 chain_id,
             ));
         }
 
-        // send txs in batch of 100 (set now, can be adjusted later)
+        // Send txs in a batch of `MAX_BATCH_SIZE`
+        // If any of the futures in this batch returns an error, it will stop and return that error
         join_all(batch).await;
+        // handle errors
     }
 
     Ok(())
@@ -203,7 +202,7 @@ pub(crate) async fn multicall_light_txs_2(
 
     // Handle async calls in batches where each batch has `MAX_BATCH_SIZE` requests.
     handle_async_calls_in_batch_light(
-        client.to_owned(),
+        client.clone(),
         counter_address,
         signers.to_owned(),
         chain_id,
@@ -225,9 +224,10 @@ pub(crate) async fn load_set_array(
     client: Arc<Provider<Http>>,
     load_address: Address,
     signer: Wallet<SigningKey>,
+    chain_id: u64,
 ) -> eyre::Result<()> {
     // create a middleware client with signature from signer & provider
-    let client_middleware = SignerMiddleware::new(client.clone(), signer);
+    let client_middleware = SignerMiddleware::new(client.clone(), signer.with_chain_id(chain_id));
 
     // clone the client (if multiple use)
     let client_middleware = Arc::new(client_middleware);
@@ -255,7 +255,7 @@ pub(crate) async fn load_set_array(
         "\'{}\' set Array with count {}, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.\n",
         tx_receipt.from,
         count,
-        get_gas_cost(&client.clone(), &tx_receipt).await?,
+        get_gas_cost(&client, &tx_receipt).await?,
         tx_receipt.transaction_hash,
         tx_receipt.transaction_index,
         tx_receipt.block_number.unwrap()
@@ -270,17 +270,19 @@ async fn handle_async_calls_in_batch_heavy(
     client: Arc<Provider<Http>>,
     load_address: Address,
     signers: Vec<Wallet<SigningKey>>,
+    chain_id: u64,
 ) -> eyre::Result<()> {
     // iteration in chunk of `MAX_BATCH_SIZE`
     for chunk in signers.chunks(MAX_BATCH_SIZE.into()) {
         // create a batch vec for this chunk
-        let mut batch = Vec::new();
+        let mut batch = Vec::with_capacity(chunk.len());
 
         for signer in chunk {
-            batch.push(load_set_array(client.to_owned(), load_address, signer.to_owned()));
+            batch.push(load_set_array(client.clone(), load_address, signer.to_owned(), chain_id));
         }
 
-        // send txs in batch of 100 (set now, can be adjusted later)
+        // Send txs in a batch of `MAX_BATCH_SIZE`
+        // If any of the futures in this batch returns an error, it will stop and return that error
         join_all(batch).await;
     }
 
@@ -297,9 +299,11 @@ pub(crate) async fn multicall_heavy_txs_2(
     client: Arc<Provider<Http>>,
     load_address: Address,
     signers: Vec<Wallet<SigningKey>>,
+    chain_id: u64,
 ) -> eyre::Result<()> {
     // Handle async calls in batches where each batch has `MAX_BATCH_SIZE` requests.
-    handle_async_calls_in_batch_heavy(client.to_owned(), load_address, signers.to_owned()).await?;
+    handle_async_calls_in_batch_heavy(client.clone(), load_address, signers.to_owned(), chain_id)
+        .await?;
 
     Ok(())
 }
@@ -380,9 +384,9 @@ pub(crate) async fn gen_wallets_transfer_tssc(
     chain_id: u64,
 ) -> eyre::Result<Vec<Wallet<SigningKey>>> {
     // generate some new accounts and send funds to each of them
-    let mut wallet_addresses = Vec::<Address>::new();
-    let mut wallet_priv_keys = Vec::<String>::new();
-    let mut signers: Vec<Wallet<SigningKey>> = Vec::new();
+    let mut wallet_addresses = Vec::<Address>::with_capacity(num_accounts as usize);
+    let mut wallet_priv_keys = Vec::<String>::with_capacity(num_accounts as usize);
+    let mut signers = Vec::with_capacity(usize::from(num_accounts as usize));
 
     // generate multiple accounts based on the parsed number.
     for i in 0..num_accounts {
@@ -454,7 +458,7 @@ pub(crate) async fn transfer_tssc_bulk(
     println!(
         "\n\'{}\' sent funds to newly created accounts, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.\n",
         tx_receipt.from,
-        get_gas_cost(&client.clone(), &tx_receipt).await?,
+        get_gas_cost(&client, &tx_receipt).await?,
         tx_receipt.transaction_hash,
         tx_receipt.transaction_index,
         tx_receipt.block_number.unwrap()
