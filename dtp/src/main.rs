@@ -142,7 +142,7 @@ async fn main() -> Result<()> {
                             max_batch_size,
                         )
                         .await
-                        .expect("Approach-2 failed.");
+                        .expect("Approach-2 failed when sending light txs.");
 
                         println!("Light transactions sent successfully.")
                     }
@@ -158,6 +158,21 @@ async fn main() -> Result<()> {
                     }
                     None => {
                         // TODO: Bundle transactions and send in the next available blocks
+                        // TODO: The progress bar should be used like ... blinking or something to indicate that the program is still running.
+                        println!("Sending heavy transactions...");
+                        // Approach-2: All new wallet accounts are sender for each call individually
+                        // Say, all of them want to increment
+                        multicall_heavy_txs_2(
+                            client.clone(),
+                            load_address,
+                            signers,
+                            chain_id,
+                            max_batch_size,
+                        )
+                        .await
+                        .expect("Approach-2 failed when sending heavy txs.");
+
+                        println!("Heavy transactions sent successfully.")
                     }
                 }
             }
