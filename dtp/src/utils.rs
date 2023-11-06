@@ -9,6 +9,8 @@ use ethers::{
 use futures::future::join_all;
 use std::sync::Arc;
 
+const MAX_BATCH_CHUNK_SIZE: u16 = 100;
+
 /// Convert Wei to TSSC (in String)
 pub(crate) fn wei_to_tssc_string(bal_wei: U256) -> String {
     let bal_tssc = format_units(bal_wei, "ether").unwrap();
@@ -200,6 +202,52 @@ pub(crate) async fn multicall_light_txs_1(
     Ok(())
 }
 
+/// Handle future calls by batching method into a batch of max. chunk size.
+/// Otherwise, without batching, it's failing when requested too many connections at once.
+/// All new accounts are incrementing numbers (as considered this activity).
+/// NOTE: There are many combination of running these txs by multiple signers.
+/// But, for simplicity here, we have considered only `increment` function call
+/// of `Counter` contract.
+///
+/// Here, instead of sending `calls` at once via `join_all(calls).await` as shown here:
+/// ```rust
+/// let mut calls = Vec::new();
+/// for signer in &signers {
+///     // collect all contract setter calls into a vec of futures. So, not awaited on each future in this loop.
+///     calls.push(counter_increment(client.to_owned(), counter_address, signer.to_owned()));
+/// }
+/// // async calls awaited all at once so as to try to put as many txs into a/few blocks than
+/// // sending each tx into each block.
+/// // Here, senders are different for each tx. So, not a problem of dependency on each other.
+/// join_all(calls).await;
+/// ```
+///
+/// Use `batch` to run each batch via `join_all(batch).await`. E.g. for 1000 connections,
+/// there would be 10 batches of 100 calls/requests each. Now, each batch i.e. 100 requests
+/// is sent at once, unlike all 1000 (total) calls sent at once as was done previously.
+async fn handle_async_calls_in_batch(
+    client: Arc<Provider<Http>>,
+    counter_address: Address,
+    signers: Vec<Wallet<SigningKey>>,
+) -> eyre::Result<()> {
+    // TODO: add chunk_size related code
+
+    // iteration in chunk of `MAX_BATCH_CHUNK_SIZE`
+    for chunk in signers.chunks(MAX_BATCH_CHUNK_SIZE.into()) {
+        // create a batch vec for this chunk
+        let mut batch = Vec::new();
+
+        for signer in chunk {
+            batch.push(counter_increment(client.to_owned(), counter_address, signer.to_owned()));
+        }
+
+        // send txs in batch of 100 (set now, can be adjusted later)
+        join_all(batch).await;
+    }
+
+    Ok(())
+}
+
 /// Approach-2: All new wallet accounts are sender for each call
 pub(crate) async fn multicall_light_txs_2(
     client: Arc<Provider<Http>>,
@@ -212,19 +260,8 @@ pub(crate) async fn multicall_light_txs_2(
         .expect("Unable to get Counter number before calls.");
     println!("\nNumber stored in \'Counter\' before calls: {}", num_before);
 
-    let mut calls = Vec::new();
-    // send tx in iteration
-    for signer in &signers {
-        // all accounts are incrementing
-        // NOTE: there could be many patterns (with cases) for sending different combination of functions for multiple senders
-        // collect all contract setter calls into a vec of futures. So, not awaited on each future in this loop.
-        calls.push(counter_increment(client.to_owned(), counter_address, signer.to_owned()));
-    }
-
-    // async calls awaited all at once so as to try to put as many txs into a/few blocks than
-    // sending each tx into each block.
-    // Here, senders are different for each tx. So, not a problem of dependency on each other.
-    join_all(calls).await;
+    // Handle async calls in batches where each batch has `MAX_BATCH_CHUNK_SIZE` requests.
+    handle_async_calls_in_batch(client.to_owned(), counter_address, signers.to_owned()).await?;
 
     // get the number value before calls
     let num_after = counter_get_number(client.clone(), counter_address)
