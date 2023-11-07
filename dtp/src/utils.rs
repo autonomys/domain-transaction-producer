@@ -186,8 +186,7 @@ pub(crate) async fn multicall_heavy_txs_2(
 }
 
 /// Get contract addresses from env variables from `.env` file
-pub(crate) async fn get_env_vars(
-) -> eyre::Result<(Address, Address, Address, Address, u64, u16, u16)> {
+pub(crate) async fn get_env_vars() -> eyre::Result<(Address, Address, Address, Address, u16, u16)> {
     // get Counter contract address
     let counter_address =
         std::env::var("COUNTER").expect("Failed to get \'Counter\' contract address");
@@ -206,10 +205,6 @@ pub(crate) async fn get_env_vars(
     let fund_address = std::env::var("FUND").expect("Failed to get \'Fund\' contract address");
     let fund_address = fund_address.parse::<Address>()?;
 
-    // get chain id
-    let chain_id = std::env::var("CHAIN_ID").expect("Failed to get \'chain id\'");
-    let chain_id = chain_id.parse::<u64>()?;
-
     // get max batch size
     let max_batch_size = std::env::var("MAX_BATCH_SIZE").expect("Failed to get \'max batch size\'");
     let max_batch_size = max_batch_size.parse::<u16>()?;
@@ -224,7 +219,6 @@ pub(crate) async fn get_env_vars(
         load_address,
         multicall_address,
         fund_address,
-        chain_id,
         max_batch_size,
         max_load_count_per_block,
     ))

@@ -85,7 +85,6 @@ async fn main() -> Result<()> {
                 load_address,
                 multicall_address,
                 fund_contract_addr,
-                chain_id,
                 max_batch_size,
                 max_load_count_per_block,
             ) = get_env_vars().await?;
@@ -96,6 +95,9 @@ async fn main() -> Result<()> {
 
             // Create a shared reference across threads (in each `.await` call). looks synchronous, but many async calls are made here.
             let client = Arc::new(provider.clone());
+
+            // get the chain id
+            let chain_id = provider.get_chainid().await?.as_u64();
 
             // Get funder wallet after importing funder private key and also check for required funder balance
             // in order to transfer the funds to the newly created accounts.
