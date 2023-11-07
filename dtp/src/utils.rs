@@ -1,7 +1,7 @@
 use crate::contracts::{counter_get_number, counter_increment, load_set_array};
 use bindings::fund::Fund;
 use ethers::{
-    core::{k256::ecdsa::SigningKey, rand::thread_rng},
+    core::k256::ecdsa::SigningKey,
     prelude::*,
     signers::Wallet,
     utils::{format_units, hex},
@@ -263,7 +263,40 @@ pub(crate) async fn get_funder_wallet_and_check_required_balance(
     Ok((funder_wallet, funder_address, funder_balance_wei_initial))
 }
 
-/// generate new accounts and transfer TSSC
+/// Generates a specified number of wallets, funds them by calling a contract's `transferTsscToMany` method,
+/// and returns the collection of generated wallets.
+///
+/// # Arguments
+///
+/// * `client` - An `Arc` wrapped `Provider` for HTTP requests.
+/// * `num_accounts` - The number of wallets to generate.
+/// * `funder_wallet` - The wallet instance used to fund the new wallets.
+/// * `funding_amount` - The amount of funds to transfer to each wallet.
+/// * `fund_contract_addr` - The smart contract address used for transferring funds.
+/// * `chain_id` - The identifier of the specific Ethereum network chain being used.
+///
+/// # Returns
+///
+/// A result containing either a vector of wallets (`Vec<Wallet<SigningKey>>`) if successful, or an `eyre::Result` error
+/// if the operation fails.
+///
+/// # Examples
+///
+/// ```
+/// // Example usage (assuming async context and required variables are defined)
+/// let wallets = gen_wallets_transfer_tssc(
+///     client,
+///     5,
+///     funder_wallet,
+///     1000,
+///     fund_contract_addr,
+///     1
+/// ).await?;
+/// ```
+///
+/// # Errors
+///
+/// This function will return an error if the contract's method call to transfer funds fails.
 pub(crate) async fn gen_wallets_transfer_tssc(
     client: Arc<Provider<Http>>,
     num_accounts: u32,
@@ -272,44 +305,51 @@ pub(crate) async fn gen_wallets_transfer_tssc(
     fund_contract_addr: Address,
     chain_id: u64,
 ) -> eyre::Result<Vec<Wallet<SigningKey>>> {
-    // generate some new accounts and send funds to each of them
-    let mut wallet_addresses = Vec::<Address>::with_capacity(num_accounts as usize);
-    let mut wallet_priv_keys = Vec::<String>::with_capacity(num_accounts as usize);
-    let mut signers = Vec::with_capacity(usize::from(num_accounts as usize));
+    // Use a thread-local random number generator
+    let mut rng = rand::rngs::ThreadRng::default();
 
-    // generate multiple accounts based on the parsed number.
-    for i in 0..num_accounts {
-        let mut rng: rand::rngs::ThreadRng = thread_rng();
-        let wallet = LocalWallet::new(&mut rng);
-        // println!("Successfully created new keypair.");
-        let pub_key = wallet.address();
-        println!("\nAddress[{i}]:     {:?}", pub_key);
-        // TODO: [OPTIONAL] save the keypair into a local file or show in the output. Create a CLI flag like --to-console/--to-file
-        let priv_key = format!("0x{}", hex::encode(wallet.signer().to_bytes()));
-        println!("Private key[{i}]: {}", priv_key);
-        signers.push(wallet);
-        wallet_addresses.push(pub_key);
-        wallet_priv_keys.push(priv_key);
-    }
+    // Generate wallets using the random number generator
+    let wallets = (0..num_accounts).map(|_| LocalWallet::new(&mut rng)).collect::<Vec<_>>();
 
-    println!(
-        "\nCalling \'Fund\' contract\'s \'transferTsscToMany\' method for sending funds in bulk..."
-    );
+    // Extract the Ethereum addresses from the wallets
+    let wallet_addresses = wallets
+        .iter()
+        .enumerate()
+        .map(|(i, wallet)| {
+            let address: H160 = wallet.address();
+            println!("Address[{}]:     {:?}", i, address);
+            address
+        })
+        .collect::<Vec<_>>();
 
-    // M-2: transfer funds using 'Fund' contract
-    // Recommended for bulk transfer from single account.
-    // Also all transfers added via single tx i.e. funder's single signature.
+    // TODO: [OPTIONAL] save the keypair into a local file or show in the output. Create a CLI flag like --to-console/--to-file
+    // Extract and format the private keys of the wallets for logging purposes
+    let wallet_priv_keys = wallets
+        .iter()
+        .enumerate()
+        .map(|(i, wallet)| {
+            let priv_key = format!("0x{}", hex::encode(wallet.signer().to_bytes()));
+            println!("Private key[{}]: {}", i, priv_key);
+            priv_key
+        })
+        .collect::<Vec<_>>();
+
+    // Log the initiation of the bulk fund transfer operation
+    println!("\nInitiating bulk transfer via the 'Fund' contract's 'transferTsscToMany' method...");
+
+    // Perform the bulk transfer by invoking the contract's method
     transfer_tssc_bulk(
-        client.clone(),
+        client,
         &funder_wallet,
-        wallet_addresses.clone(),
+        wallet_addresses,
         U256::from(funding_amount),
         fund_contract_addr,
         chain_id,
     )
     .await?;
 
-    Ok(signers)
+    // Return the wallets after funding
+    Ok(wallets)
 }
 
 /// Transfer TSSC in bulk
