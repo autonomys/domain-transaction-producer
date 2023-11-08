@@ -738,6 +738,7 @@ dependencies = [
  "ethers",
  "eyre",
  "futures",
+ "itertools 0.11.0",
  "log",
  "serde_json",
  "structopt",

@@ -1,4 +1,4 @@
-#![allow(unused_imports)]
+// #![allow(unused_imports)]
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
@@ -12,6 +12,7 @@ use structopt::StructOpt;
 mod utils;
 use utils::*;
 
+/// contracts
 mod contracts;
 
 /// TODO: able to parse like "1 ETH", "1000 Wei"

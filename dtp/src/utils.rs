@@ -7,6 +7,7 @@ use ethers::{
     utils::{format_units, hex},
 };
 use futures::future::join_all;
+use itertools::MultiUnzip;
 use log::info;
 use std::sync::Arc;
 
@@ -308,31 +309,24 @@ pub(crate) async fn gen_wallets_transfer_tssc(
     // Use a thread-local random number generator
     let mut rng = rand::rngs::ThreadRng::default();
 
-    // Generate wallets using the random number generator
-    let wallets = (0..num_accounts).map(|_| LocalWallet::new(&mut rng)).collect::<Vec<_>>();
-
-    // Extract the Ethereum addresses from the wallets
-    let wallet_addresses = wallets
-        .iter()
-        .enumerate()
-        .map(|(i, wallet)| {
-            let address: H160 = wallet.address();
-            println!("Address[{}]:     {:?}", i, address);
-            address
-        })
-        .collect::<Vec<_>>();
-
-    // TODO: [OPTIONAL] save the keypair into a local file or show in the output. Create a CLI flag like --to-console/--to-file
-    // Extract and format the private keys of the wallets for logging purposes
-    let wallet_priv_keys = wallets
-        .iter()
-        .enumerate()
-        .map(|(i, wallet)| {
+    // Generate wallets using the random number generator, extract addresses and private keys in one loop into a hashmap of address, priv_key.
+    // Log the addresses and private keys.
+    // Then unzip this vector into a vec of wallets and a hashmap of addresses & private keys.
+    // TODO: [OPTIONAL] save the keypair into a local file or show in the output. Create a CLI flag like `--to-console` or `--to-file`
+    let (wallets, addresses, priv_keys): (Vec<_>, Vec<_>, Vec<_>) = (0..num_accounts)
+        .map(|_| {
+            let wallet = LocalWallet::new(&mut rng);
+            let address = wallet.address();
             let priv_key = format!("0x{}", hex::encode(wallet.signer().to_bytes()));
-            println!("Private key[{}]: {}", i, priv_key);
-            priv_key
+
+            // Logging here is still efficient since it's part of the single iteration
+            println!("\nAddress:     {:?}", address);
+            println!("Private key: {}", priv_key);
+
+            (wallet, address, priv_key)
         })
-        .collect::<Vec<_>>();
+        // multiunzip takes an iterator of tuples and separates them into multiple collections
+        .multiunzip();
 
     // Log the initiation of the bulk fund transfer operation
     println!("\nInitiating bulk transfer via the 'Fund' contract's 'transferTsscToMany' method...");
@@ -341,7 +335,7 @@ pub(crate) async fn gen_wallets_transfer_tssc(
     transfer_tssc_bulk(
         client,
         &funder_wallet,
-        wallet_addresses,
+        addresses,
         U256::from(funding_amount),
         fund_contract_addr,
         chain_id,
