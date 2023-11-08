@@ -7,7 +7,6 @@ use ethers::{
     utils::{format_units, hex},
 };
 use futures::future::join_all;
-use itertools::MultiUnzip;
 use log::info;
 use std::sync::Arc;
 
@@ -21,22 +20,6 @@ pub(crate) fn wei_to_tssc_string(bal_wei: U256) -> String {
 pub(crate) fn wei_to_tssc_f64(bal_wei: U256) -> f64 {
     let bal_tssc = bal_wei.as_usize() as f64 / 1e18;
     bal_tssc
-}
-
-/// calculate tx gas cost from `gas_price` & `gas_spent` for a tx
-pub(crate) async fn get_gas_cost(
-    provider: &Provider<Http>,
-    tx_receipt: &TransactionReceipt,
-) -> eyre::Result<f64> {
-    let gas_price =
-        provider.get_transaction(tx_receipt.transaction_hash).await?.unwrap().gas_price.unwrap();
-
-    let gas_spent = provider.get_transaction(tx_receipt.transaction_hash).await?.unwrap().gas;
-
-    let gas_cost_wei = gas_price.checked_mul(gas_spent).unwrap();
-    let gas_cost_tssc = wei_to_tssc_f64(gas_cost_wei);
-
-    Ok(gas_cost_tssc)
 }
 
 /// Handle future calls by batching method into a batch of max. chunk size.
@@ -264,6 +247,34 @@ pub(crate) async fn get_funder_wallet_and_check_required_balance(
     Ok((funder_wallet, funder_address, funder_balance_wei_initial))
 }
 
+/// get wallets and addresses
+fn get_wallets_addresses(
+    num_accounts: u32,
+) -> eyre::Result<(Vec<Wallet<SigningKey>>, Vec<Address>)> {
+    // Use a thread-local random number generator
+    let mut rng = rand::rngs::ThreadRng::default();
+
+    // Generate wallets using the random number generator, extract addresses and private keys in one loop into a hashmap of address, priv_key.
+    // Log the addresses and private keys.
+    // Then unzip this vector into a vec of wallets and a hashmap of addresses & private keys.
+    // TODO: [OPTIONAL] save the keypair or just private key into a local file or show in the output. Create a CLI flag like `--to-console` or `--to-file`
+    let (wallets, addresses): (Vec<_>, Vec<_>) = (0..num_accounts)
+        .map(|_| {
+            let wallet = LocalWallet::new(&mut rng);
+            let address = wallet.address();
+            let priv_key = format!("0x{}", hex::encode(wallet.signer().to_bytes()));
+
+            // Logging here is still efficient since it's part of the single iteration
+            println!("\nAddress:     {:?}", address);
+            println!("Private key: {}", priv_key);
+
+            (wallet, address)
+        })
+        .unzip();
+
+    Ok((wallets, addresses))
+}
+
 /// Generates a specified number of wallets, funds them by calling a contract's `transferTsscToMany` method,
 /// and returns the collection of generated wallets.
 ///
@@ -306,27 +317,9 @@ pub(crate) async fn gen_wallets_transfer_tssc(
     fund_contract_addr: Address,
     chain_id: u64,
 ) -> eyre::Result<Vec<Wallet<SigningKey>>> {
-    // Use a thread-local random number generator
-    let mut rng = rand::rngs::ThreadRng::default();
-
-    // Generate wallets using the random number generator, extract addresses and private keys in one loop into a hashmap of address, priv_key.
-    // Log the addresses and private keys.
-    // Then unzip this vector into a vec of wallets and a hashmap of addresses & private keys.
-    // TODO: [OPTIONAL] save the keypair into a local file or show in the output. Create a CLI flag like `--to-console` or `--to-file`
-    let (wallets, addresses, priv_keys): (Vec<_>, Vec<_>, Vec<_>) = (0..num_accounts)
-        .map(|_| {
-            let wallet = LocalWallet::new(&mut rng);
-            let address = wallet.address();
-            let priv_key = format!("0x{}", hex::encode(wallet.signer().to_bytes()));
-
-            // Logging here is still efficient since it's part of the single iteration
-            println!("\nAddress:     {:?}", address);
-            println!("Private key: {}", priv_key);
-
-            (wallet, address, priv_key)
-        })
-        // multiunzip takes an iterator of tuples and separates them into multiple collections
-        .multiunzip();
+    // get wallets and addresses
+    let (wallets, addresses) =
+        get_wallets_addresses(num_accounts).expect("Not able to generate wallets or addresses");
 
     // Log the initiation of the bulk fund transfer operation
     println!("\nInitiating bulk transfer via the 'Fund' contract's 'transferTsscToMany' method...");
@@ -379,9 +372,9 @@ pub(crate) async fn transfer_tssc_bulk(
         .await?
         .expect("Failure in \'transferTsscToMany\' function of Fund contract");
     println!(
-        "\n\'{}\' sent funds to newly created accounts, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.\n",
+        "\n\'{}\' sent funds to newly created accounts, which incurred a gas of \'{}\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.\n",
         tx_receipt.from,
-        get_gas_cost(&client, &tx_receipt).await?,
+        tx_receipt.gas_used.unwrap_or_default(),
         tx_receipt.transaction_hash,
         tx_receipt.transaction_index,
         tx_receipt.block_number.unwrap()

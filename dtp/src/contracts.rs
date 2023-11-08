@@ -1,7 +1,6 @@
-use crate::utils::get_gas_cost;
 use bindings::{counter::Counter, load::Load};
 use ethers::{core::k256::ecdsa::SigningKey, prelude::*, signers::Wallet};
-use log::info;
+use log::debug;
 use std::sync::Arc;
 
 /// get Counter number
@@ -41,10 +40,10 @@ pub(crate) async fn counter_set_number(
         .await?
         .await?
         .expect("Failure in \'set_number\' of Counter contract");
-    info!(
-        "\n\'{}\' set number as \'42\', which incurred a gas fee of \'{} TSSC\' has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
+    debug!(
+        "\n\'{}\' set number as \'42\', which incurred a gas of \'{}\' has a tx hash: \'{:?}\', indexed at #{} in block #{}.",
         tx_receipt.from,
-        get_gas_cost(&client, &tx_receipt).await?,
+        tx_receipt.gas_used.unwrap_or_default(),
         tx_receipt.transaction_hash,
         tx_receipt.transaction_index,
         tx_receipt.block_number.unwrap()
@@ -78,10 +77,10 @@ pub(crate) async fn counter_increment(
         .expect("Failure in getting pending tx")
         .await?
         .expect("Failure in \'increment\' of Counter contract");
-    info!(
-        "\'{}\' increment number, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.\n",
+    debug!(
+        "\'{}\' increment number, which incurred a gas of \'{}\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.\n",
         tx_receipt.from,
-        get_gas_cost(&client, &tx_receipt).await?,
+        tx_receipt.gas_used.unwrap_or_default(),
         tx_receipt.transaction_hash,
         tx_receipt.transaction_index,
         tx_receipt.block_number.unwrap()
@@ -124,11 +123,11 @@ pub(crate) async fn load_set_array(
         .await?
         .expect("Failure in \'setArray\' method of Load contract");
 
-    info!(
-        "\'{}\' set Array with count {}, which incurred a gas fee of \'{} TSSC\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.\n",
+    debug!(
+        "\'{}\' set Array with count {}, which incurred a gas of \'{}\', has a tx hash: \'{:?}\', indexed at #{} in block #{}.\n",
         tx_receipt.from,
         count,
-        get_gas_cost(&client, &tx_receipt).await?,
+        tx_receipt.gas_used.unwrap_or_default(),
         tx_receipt.transaction_hash,
         tx_receipt.transaction_index,
         tx_receipt.block_number.unwrap()
