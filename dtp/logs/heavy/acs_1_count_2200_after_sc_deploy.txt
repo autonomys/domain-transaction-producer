@@ -1,0 +1,35 @@
+❯ RUST_LOG=info,debug cargo run -- \             
+--funding-amount 316671227500000500 \
+--initial-funded-account-private-key $FUNDER_PRIVATE_KEY \
+--num-accounts 1 \
+--rpc-url $SUBSPACE_EVM_RPC_URL \
+--transaction-type heavy
+    Finished dev [unoptimized + debuginfo] target(s) in 0.56s
+     Running `target/debug/dtp --funding-amount 316671227500000500 --initial-funded-account-private-key 0x99db827367bad45a4da0282aa8d14ab9d917e03d5df5d0af3afd7a684ea78beb --num-accounts 1 --rpc-url 'https://nova.gemini-3g.subspace.network/ws' --transaction-type heavy`
+[2023-11-09T20:24:53Z DEBUG reqwest::connect] starting new connection: https://nova.gemini-3g.subspace.network/
+[2023-11-09T20:24:53Z DEBUG rustls::client::hs] No cached session for DnsName("nova.gemini-3g.subspace.network")
+[2023-11-09T20:24:53Z DEBUG rustls::client::hs] Not resuming any session
+[2023-11-09T20:24:53Z DEBUG rustls::client::hs] Using ciphersuite TLS13_AES_128_GCM_SHA256
+[2023-11-09T20:24:53Z DEBUG rustls::client::tls13] Not resuming
+[2023-11-09T20:24:53Z DEBUG rustls::client::tls13] TLS1.3 encrypted extensions: [Protocols([ProtocolName(6832)])]
+[2023-11-09T20:24:53Z DEBUG rustls::client::hs] ALPN protocol is Some(b"h2")
+
+Funder's initial balance: 90.360754022909992000 TSSC.
+=====
+
+Address:     0x106e0b1daf9d267f015336f5a9540125d315b163
+Private key: 0x1b8aaf36ce6fb89ad0179220abcf6ccb0959e801abcd5458f7b8b357bf3e1dc3
+
+Initiating bulk transfer via the 'Fund' contract's 'transferTsscToMany' method...
+
+'0x0370…d246' sent funds to newly created accounts, which incurred a gas of '59072', has a tx hash: '0x28a76b48d5eb145bbe6312c925ff7ae34713122689bbf6c428a9bb5fff5f5315', indexed at #0 in block #10382.
+
+Sending heavy transactions...
+[2023-11-09T20:25:13Z DEBUG dtp::contracts] Estimated gas: 51378903
+[2023-11-09T20:25:13Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 179826160500000000; 0x106e…b163's balance; 316671227500000000
+[2023-11-09T20:25:31Z DEBUG dtp::contracts] [Post-tx] Gas price: 174636760670526000
+[2023-11-09T20:25:31Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x106e…b163, gas price: 0.174636760670526026 TSSC, tx hash: 0x15d483884d9461596309674f012b2c6c71a11c840d8bd9984dad1257231646e8, tx index: 0, block number: 10384
+Heavy transactions sent successfully.
+=====
+Funder's final balance: 90.043876043409991500 TSSC.
+Funder spent: 0.316877979500000517 TSSC
