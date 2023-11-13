@@ -3,10 +3,7 @@
 #![allow(dead_code)]
 
 // imports
-use ethers::{
-    core::k256::ecdsa::SigningKey, core::rand::thread_rng, prelude::*, signers::LocalWallet,
-    types::U256, utils::hex,
-};
+use ethers::prelude::*;
 use eyre::{bail, Result};
 use std::{str::FromStr, sync::Arc};
 use structopt::StructOpt;
@@ -15,9 +12,12 @@ use structopt::StructOpt;
 mod utils;
 use utils::*;
 
+/// contracts
+mod contracts;
+
 /// TODO: able to parse like "1 ETH", "1000 Wei"
-/// TODO: `transaction_type` can be made as optional in cases where funds are to be
-/// transferred to newly created accounts
+/// TODO: `transaction_type` can be made as optional in cases where just need to transfer
+/// funds to newly created accounts share their account details with the set of users as pre-funded account.
 #[derive(StructOpt, Debug)]
 #[structopt(name = "dtp", about = "Domain Transaction Producer")]
 /// CLI params
@@ -77,8 +77,18 @@ async fn main() -> Result<()> {
             // get the .env
             dotenv::from_path("./dtp/.env").expect("Failed to get env variables");
 
-            let (counter_address, load_address, multicall_address, fund_contract_addr) =
-                get_contract_addresses_from_env().await?;
+            // init logger for debugging
+            env_logger::init();
+
+            // get the env variables
+            let (
+                counter_address,
+                load_address,
+                multicall_address,
+                fund_contract_addr,
+                max_batch_size,
+                max_load_count_per_block,
+            ) = get_env_vars().await?;
 
             // connect to parsed Node RPC URL
             let provider = Provider::<Http>::try_from(opt.rpc_url)
@@ -86,6 +96,9 @@ async fn main() -> Result<()> {
 
             // Create a shared reference across threads (in each `.await` call). looks synchronous, but many async calls are made here.
             let client = Arc::new(provider.clone());
+
+            // get the chain id
+            let chain_id = provider.get_chainid().await?.as_u64();
 
             // Get funder wallet after importing funder private key and also check for required funder balance
             // in order to transfer the funds to the newly created accounts.
@@ -105,6 +118,7 @@ async fn main() -> Result<()> {
                 funder_wallet,
                 opt.funding_amount,
                 fund_contract_addr,
+                chain_id,
             )
             .await?;
 
@@ -119,25 +133,21 @@ async fn main() -> Result<()> {
                         // 3. num_accounts > num_blocks
                     }
                     None => {
-                        println!("\n=====================");
-                        println!("Sending Light txs...");
-                        println!("=====================");
-
-                        // FIXME: Bundle transactions and send in the next available blocks
-                        // Approach-1: Only one sender account
-                        // multicall_light_txs(
-                        //     client.clone(),
-                        //     multicall_address,
-                        //     counter_address,
-                        //     signers,
-                        // )
-                        // .await.expect("Approach-1 failed.");
-
+                        // TODO: The progress bar should be used like ... blinking or something to indicate that the program is still running.
+                        println!("Sending light transactions...");
                         // Approach-2: All new wallet accounts are sender for each call individually
                         // Say, all of them want to increment
-                        multicall_light_txs_2(client.clone(), counter_address, signers)
-                            .await
-                            .expect("Approach-2 failed.");
+                        multicall_light_txs_2(
+                            client.clone(),
+                            counter_address,
+                            signers,
+                            chain_id,
+                            max_batch_size,
+                        )
+                        .await
+                        .expect("Approach-2 failed when sending light txs.");
+
+                        println!("Light transactions sent successfully.")
                     }
                 }
             } else if let TransactionType::HEAVY = transaction_type {
@@ -150,10 +160,23 @@ async fn main() -> Result<()> {
                         // 3. num_accounts > num_blocks
                     }
                     None => {
-                        println!("=====================");
-                        println!("Sending Heavy txs...");
-                        println!("=====================");
                         // TODO: Bundle transactions and send in the next available blocks
+                        // TODO: The progress bar should be used like ... blinking or something to indicate that the program is still running.
+                        println!("Sending heavy transactions...");
+                        // Approach-2: All new wallet accounts are sender for each call individually
+                        // Say, all of them want to increment
+                        multicall_heavy_txs_2(
+                            client.clone(),
+                            load_address,
+                            signers,
+                            chain_id,
+                            max_batch_size,
+                            max_load_count_per_block,
+                        )
+                        .await
+                        .expect("Approach-2 failed when sending heavy txs.");
+
+                        println!("Heavy transactions sent successfully.")
                     }
                 }
             }

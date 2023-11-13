@@ -1,0 +1,334 @@
+❯ RUST_LOG=info,debug cargo run -- \
+--funding-amount 25100114000000000 \
+--initial-funded-account-private-key $FUNDER_PRIVATE_KEY \
+--num-accounts 50 \
+--rpc-url $SUBSPACE_EVM_RPC_URL \
+--transaction-type heavy
+   Compiling dtp v0.1.0 (/Users/abhi3700/F/coding/github_repos/subspace/domain-transaction-producer/dtp)
+    Finished dev [unoptimized + debuginfo] target(s) in 2.75s
+     Running `target/debug/dtp --funding-amount 25100114000000000 --initial-funded-account-private-key 0x99db827367bad45a4da0282aa8d14ab9d917e03d5df5d0af3afd7a684ea78beb --num-accounts 50 --rpc-url 'https://nova.gemini-3g.subspace.network/ws' --transaction-type heavy`
+[2023-11-09T20:50:03Z DEBUG reqwest::connect] starting new connection: https://nova.gemini-3g.subspace.network/
+[2023-11-09T20:50:03Z DEBUG rustls::client::hs] No cached session for DnsName("nova.gemini-3g.subspace.network")
+[2023-11-09T20:50:03Z DEBUG rustls::client::hs] Not resuming any session
+[2023-11-09T20:50:03Z DEBUG rustls::client::hs] Using ciphersuite TLS13_AES_128_GCM_SHA256
+[2023-11-09T20:50:03Z DEBUG rustls::client::tls13] Not resuming
+[2023-11-09T20:50:03Z DEBUG rustls::client::tls13] TLS1.3 encrypted extensions: [Protocols([ProtocolName(6832)])]
+[2023-11-09T20:50:03Z DEBUG rustls::client::hs] ALPN protocol is Some(b"h2")
+
+Funder's initial balance: 89.669817323159990950 TSSC.
+=====
+
+Address:     0x28a3c825195265941ed53a59e6c0af8a45204b12
+Private key: 0xd5753ba7629c2f8ec1e181c7090b4ed8f9960859fe3a54c2b606a5dab105d36c
+
+Address:     0xbc27d9f78990c897e22980a3c23ce929e6c43610
+Private key: 0x8898a27cab0edbaaac605ed817397bda81e41d7abb5f0763c619f89f22eefb71
+
+Address:     0xa7012346100cb95864f55dada8b04f1e2f94511d
+Private key: 0x4f717906f9d61e0a6b9c7a48d78e4ecb0c5012f7c04dda108dc97de21d6707e5
+
+Address:     0x2392b93b0b57ebb55e46e5a7c0c1038361be27bf
+Private key: 0x5eb5c5d0ab81202da1d19da35cc2e3a8947ca8c290b4d3408c83866607547c20
+
+Address:     0xd130c4a4198aeb823582098e387a72926bf62b2d
+Private key: 0x8b0e5209c92edac2319f5f078e080ae13ac0522c3204dbadc4c1997ba8fcb14d
+
+Address:     0xf9be2f53dda1f9f0a5c6a8e4b40881277d6358f5
+Private key: 0x6c78e136105190ecc23da0978c04c410b336e054d881bb7d512c663294fba07f
+
+Address:     0x26c9de39c45f8a058b6e640dc1e45ea13089269d
+Private key: 0xffdcc6e171030f226d8880d4370a7ccf870329d380ba7831596ef206b897aa06
+
+Address:     0x577f4f4fdd31988e98cc4930ab5af1627cf2a4f7
+Private key: 0x01ac3e0f7dcb245bb5789e666c442584db657fd6b347ca660b026e59231ffbaa
+
+Address:     0x595066065941fe02c11b3fa0071abf0b689b1ba8
+Private key: 0x58dc45b9029ef8daac6cac8b66351f63a85575780e3a97fa44d0b08be13cac08
+
+Address:     0xdbb5c86bd3d804a1a4965a14a8c39c8f762ce618
+Private key: 0xb767d2aa4e3df9892b73c4f5e151a121035efc1bc6deb92cc781c7ba936ce9d1
+
+Address:     0x053ccaabc95d78779ec2f93d9b32ec151054e5e9
+Private key: 0x5f38c8807e857e35c21145b8acf89b6640c0b53671e3b538170a2b8c5aae934a
+
+Address:     0xca9a73605fd9e4893f944131f34d3c2ce303da35
+Private key: 0x199d9abdcb6ce2ab93acc70f0454c2fdc9e9a7b73aff5ee8bdafb9834c6b6379
+
+Address:     0xa5ff38505a55aab60dde2d2dfc55039e781b2819
+Private key: 0xd473bbc2e31946d0317576fb0f109a19d0c66c2d11ca844ccb990da9041d3bc6
+
+Address:     0x814d4b49752c5726f638dab4c12cbe6d7a59b8c6
+Private key: 0x0c5f410078faa127bb8f4fd54364bc686c843d747c4bb39f75541ed5713ebb5a
+
+Address:     0x0e4789dca0cd2167a834fb0122f82d1d46d17131
+Private key: 0x14ab0964b50e972281fc6b35e5a84849f9e95ed5bf5959b9c999b99bfb1dc1b2
+
+Address:     0x0601f95b3501404a93e34ebceadcff4f7b585475
+Private key: 0xd835b9cb69347f580159ba5abed78d1a974a59a1485dd497811a95014eb14430
+
+Address:     0xae9f667b1d6f5ecd307e481fd2de6f26fc1ed476
+Private key: 0x87c339b288a9723e1541edd84fb873c6991c8336cb452c5482d88617b6e9b920
+
+Address:     0x8ed8df4cc29b78246dac40ffb7cbdab82ea0eb32
+Private key: 0xc8d4bc4b40cb68ff8b218b5e27e60b9f68bbd81ac50bd293b948ec5b81191740
+
+Address:     0x3655d8aab801f89792e3e18c0233307a737b017f
+Private key: 0x127c3af6cae9e845703d2a969a16a3b50e33fe81b6f0a8e2d0bbdb22cf58b074
+
+Address:     0x67b706469b283055a993cb42974a42058237e032
+Private key: 0xb1f0f64a61f6fe84b6ca8ac7ee5acb383cfd289bf22e44efe9e94bb87d53481e
+
+Address:     0x0ec1924c310ac06be816233ee900f2f1ee70b119
+Private key: 0x6633dc0ed0d2f75b15f56052f657df8f3972cc5a27502a65c5f164eca98cc066
+
+Address:     0x49bb7a36f45d5b83b49c6868613205120b7646d6
+Private key: 0x7d624a72d21a5562ab20023f1cad4c0e35b8ca29973df10506b30b5c8d2341f2
+
+Address:     0x511a21dcf5552faf18d399350cfea895ae228cf8
+Private key: 0x7f43af020c265c31b131d2fc52886a2ef5067e442478af9cd55961fbc9e73cd3
+
+Address:     0xf883ebcc8d847292e5c16be50889ff3014662ec9
+Private key: 0xeeaf12f54c1f6a48362e6d3e1b2b9f76d3dc6cb974405966bd3e9ba83ac96635
+
+Address:     0x6e39ab09311fc7ed4503187616f8418ea81d5034
+Private key: 0x734c22f1d29978c6dae8b223ea95dcf610d4a9e5bcdd8c4c158226e945877b3f
+
+Address:     0x780db8bb5dd2f11d5bb428645edeef6b065dd2f5
+Private key: 0xf9b0facb83f1c232c1dca0a367e355b3816f150bb2f71e42fad23be9367be55b
+
+Address:     0xd12679fcb570f4eab22c948bf14351917adbdbf0
+Private key: 0x7c82e8eeaae321e2d562ec12b084c8a32420247156371120548299ad728bdbe4
+
+Address:     0x3425f84a98ee33adf0db40e9f2a42fc779eb6977
+Private key: 0x72ff98862fe82a54dda2af50d002df78866d587d29cdc1236f72a693248f6c2c
+
+Address:     0x48c393851c5ff6e72427b91bac0b42e155f0860e
+Private key: 0x12d13b7e3a411b19b7e89c6aa2d2d67041d9fb3c6a257956b1cd023efd9083d3
+
+Address:     0xf97a34ab5741c6e037e6829b788d73661f430d8a
+Private key: 0x888e580a3998768e0c3750f036d8e8c0d5b4785f5e807fd07ce59fc316699926
+
+Address:     0x284610b5e983d067c4286b5fa4a4ee47883d0913
+Private key: 0x7210762a018c772a0301ed250a19aa4aaecaaf1a560a40c1185f40d2f9144164
+
+Address:     0x8d3b7ed8961d3b47e30c0cb36e162587e8b450ce
+Private key: 0x99752183748b507b5b49fd2ed94bc9a55c1d00eaff2f68e6fd6a12fd22526729
+
+Address:     0x6ba895218cebbc355347fca6fbb99f402c759ad2
+Private key: 0x1c80805c9133aa25a70379d36fcad2df7638d2044afee05bb8e2e4a569d21d52
+
+Address:     0x1f3bf508728942de4eabaf8d1e9223f293e17e25
+Private key: 0x9f0cead61ed56121b5febdb8039b70bbe34d8de6c8fbbf742805489b905bbc92
+
+Address:     0x60bb5ff344f87badcf957fa7877ed369cb54d23c
+Private key: 0xeb791aca8dc702060a6537562a3f54b25d30e58641c8be6ce1448276d79165e7
+
+Address:     0x7b8818f87f516ba0c8cb7f6d16fb9bf9c634a941
+Private key: 0xc187d542cbc0f2d25941b2f1fd5b890b940fb820444c31c0891837008a93add3
+
+Address:     0x77fd2cb43817bd9c050aa4e258a75ef47cfb2de6
+Private key: 0xf83d9112a9dd801432a12db5f58d40fd0c5638b1d037f4c54d19610da43344d2
+
+Address:     0xe74541f4ebfc65e1ad0153b721bd5026b366162d
+Private key: 0xd8ae48f480610b8dd17a16332b1e0f0b8b096111cfa0d913ca5cae6ad348d107
+
+Address:     0xc0b493e41e207609a6363dac12b34ac28466974c
+Private key: 0xbd41cb7bfeb464a05aafc4110728a76581d70041964c7c77bbdf8c9aa3cdbd6c
+
+Address:     0xf96bac90e1746a7e4d606115e21e676e305e4a4b
+Private key: 0xe0c00a3f5f3f698e9eb2d940274b954963fd6d47914eab3e359feb564a52d60b
+
+Address:     0x5bdb40832ec8f6d070ead220b0d651a79c60b960
+Private key: 0x3eb1612e3912b54a982f2799a0efcec357cc1b042816765e323a71d7054bf058
+
+Address:     0x72de98ee1e1c4503ad5ef38838ee60009f3ac638
+Private key: 0xc37ba8ab1cad3bac0d8de52693b196a9b821d5b1947b76a1dadf17b2d148ec6e
+
+Address:     0x3450c77e539972bb61860130eab1bfdb0876d90c
+Private key: 0x33d33e5db6a24618a4870c484fbf850c58582dd4beb8136680d208d9077210be
+
+Address:     0xe881a2becaf65536f8040c3f91ec841c66f1de0c
+Private key: 0x1c5ebd50afb2fd06f04e8eb887bbb834065e07054fa931906cf8a95cc404ef9e
+
+Address:     0x985c07eb0e67766018f4aa24d639f70b3a1ea47c
+Private key: 0x8e04a474132f916e20693b5026ac92d103b3526844c8209d4314ae878c69d91f
+
+Address:     0x3447c1df5a52526dadaca07ca5cd3460dc0704dc
+Private key: 0x4c35fa928199247e201138dfd536b0f13877136a080bf31d2074dfb20e205b83
+
+Address:     0x6b7a109f927cb37a70e1c3a4b3e61628aa6c3b8c
+Private key: 0x2f6080b4ad400406c9975e9479e67dd0ee56536a053db25f77a2b4f4c4cd9141
+
+Address:     0x7a9310c276e08a00676bf8c7a3d94584dd536458
+Private key: 0x521e978f370f49f756f1d88ad0d8aa1602101ab9785b855349a61e263f97ffbd
+
+Address:     0xa6ced71e13e26bac3429c71d7cab035645e07854
+Private key: 0xf0d1c90abe0ace3fd72326e0374127d971211b558752c01c2466982f103d5c8d
+
+Address:     0xfafc62ba7b095139e778757aa440ba252a370111
+Private key: 0xb7da5b731de7f946298a480edbb2d81ed10fc5028120ff675a04a91beab80923
+
+Initiating bulk transfer via the 'Fund' contract's 'transferTsscToMany' method...
+
+'0x0370…d246' sent funds to newly created accounts, which incurred a gas of '1876697', has a tx hash: '0x71e9d911c281badeffda0175644a28a9d771c3671cc451faabc86f1fe347aa73', indexed at #0 in block #10623.
+
+Sending heavy transactions...
+[2023-11-09T20:50:15Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:15Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x577f…a4f7's balance; 25100113999999500
+[2023-11-09T20:50:15Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:15Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xa701…511d's balance; 25100113999999500
+[2023-11-09T20:50:16Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:16Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xf97a…0d8a's balance; 25100113999999500
+[2023-11-09T20:50:16Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:16Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x3425…6977's balance; 25100113999999500
+[2023-11-09T20:50:17Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:17Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xe745…162d's balance; 25100113999999500
+[2023-11-09T20:50:17Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:17Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x1f3b…7e25's balance; 25100113999999500
+[2023-11-09T20:50:18Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:18Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x6ba8…9ad2's balance; 25100113999999500
+[2023-11-09T20:50:18Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:18Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x2846…0913's balance; 25100113999999500
+[2023-11-09T20:50:19Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:19Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xf883…2ec9's balance; 25100113999999500
+[2023-11-09T20:50:19Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:19Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x48c3…860e's balance; 25100113999999500
+[2023-11-09T20:50:20Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:20Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x511a…8cf8's balance; 25100113999999500
+[2023-11-09T20:50:20Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:20Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xd126…dbf0's balance; 25100113999999500
+[2023-11-09T20:50:21Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:21Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xf96b…4a4b's balance; 25100113999999500
+[2023-11-09T20:50:21Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:21Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x780d…d2f5's balance; 25100113999999500
+[2023-11-09T20:50:22Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:22Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x6e39…5034's balance; 25100113999999500
+[2023-11-09T20:50:22Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:22Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xca9a…da35's balance; 25100113999999500
+[2023-11-09T20:50:23Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:23Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x3655…017f's balance; 25100113999999500
+[2023-11-09T20:50:23Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:23Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xa5ff…2819's balance; 25100113999999500
+[2023-11-09T20:50:24Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:24Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x8ed8…eb32's balance; 25100113999999500
+[2023-11-09T20:50:24Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:24Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x0601…5475's balance; 25100113999999500
+[2023-11-09T20:50:25Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:25Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x814d…b8c6's balance; 25100113999999500
+[2023-11-09T20:50:25Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:25Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x0e47…7131's balance; 25100113999999500
+[2023-11-09T20:50:26Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:26Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xae9f…d476's balance; 25100113999999500
+[2023-11-09T20:50:27Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:27Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x26c9…269d's balance; 25100113999999500
+[2023-11-09T20:50:27Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:27Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xd130…2b2d's balance; 25100113999999500
+[2023-11-09T20:50:27Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:27Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xdbb5…e618's balance; 25100113999999500
+[2023-11-09T20:50:28Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:28Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x2392…27bf's balance; 25100113999999500
+[2023-11-09T20:50:28Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:28Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xf9be…58f5's balance; 25100113999999500
+[2023-11-09T20:50:29Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:29Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x0ec1…b119's balance; 25100113999999500
+[2023-11-09T20:50:30Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:30Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x67b7…e032's balance; 25100113999999500
+[2023-11-09T20:50:30Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:30Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x49bb…46d6's balance; 25100113999999500
+[2023-11-09T20:50:31Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:31Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x3447…04dc's balance; 25100113999999500
+[2023-11-09T20:50:31Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:31Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x3450…d90c's balance; 25100113999999500
+[2023-11-09T20:50:32Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:32Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x77fd…2de6's balance; 25100113999999500
+[2023-11-09T20:50:32Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:32Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x985c…a47c's balance; 25100113999999500
+[2023-11-09T20:50:33Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:33Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xc0b4…974c's balance; 25100113999999500
+[2023-11-09T20:50:33Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:33Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x5bdb…b960's balance; 25100113999999500
+[2023-11-09T20:50:34Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:34Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x7a93…6458's balance; 25100113999999500
+[2023-11-09T20:50:34Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:34Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x8d3b…50ce's balance; 25100113999999500
+[2023-11-09T20:50:35Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:35Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xfafc…0111's balance; 25100113999999500
+[2023-11-09T20:50:35Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:35Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xe881…de0c's balance; 25100113999999500
+[2023-11-09T20:50:36Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:36Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xa6ce…7854's balance; 25100113999999500
+[2023-11-09T20:50:36Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:36Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x72de…c638's balance; 25100113999999500
+[2023-11-09T20:50:37Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:37Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x6b7a…3b8c's balance; 25100113999999500
+[2023-11-09T20:50:37Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:37Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x60bb…d23c's balance; 25100113999999500
+[2023-11-09T20:50:38Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:38Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x7b88…a941's balance; 25100113999999500
+[2023-11-09T20:50:38Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:38Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x053c…e5e9's balance; 25100113999999500
+[2023-11-09T20:50:39Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:39Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x5950…1ba8's balance; 25100113999999500
+[2023-11-09T20:50:39Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:39Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0x28a3…4b12's balance; 25100113999999500
+[2023-11-09T20:50:40Z DEBUG dtp::contracts] Estimated gas: 6230778
+[2023-11-09T20:50:40Z DEBUG dtp::contracts] [Pre-tx] Est. gas price: 21807723000000000; 0xbc27…3610's balance; 25100113999999500
+[2023-11-09T20:51:02Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:02Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0xf97a…0d8a, gas price: 0.021100114000000000 TSSC, tx hash: 0xb9909fd080bfef89b38cbc314b6417d0ead45ba1fd28a078018fb550eb2c3386, tx index: 0, block number: 10631
+[2023-11-09T20:51:03Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:03Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x72de…c638, gas price: 0.021100114000000000 TSSC, tx hash: 0x4bb20dc0e815dc320484f385a69be4a153db0991331b43da602278e9c8e6a047, tx index: 1, block number: 10633
+[2023-11-09T20:51:03Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:03Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x5bdb…b960, gas price: 0.021100114000000000 TSSC, tx hash: 0x3073084a02d2ae6cfc51308720276e4211e5bf73e602a05684605775855ed0e9, tx index: 0, block number: 10633
+[2023-11-09T20:51:14Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:14Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0xdbb5…e618, gas price: 0.021153994648250001 TSSC, tx hash: 0xb425f925cf95938b95c88fda9b8a3ca5b1b7d41b9d90d4d9b649d38ca59675db, tx index: 2, block number: 10634
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x3425…6977, gas price: 0.021208838408189230 TSSC, tx hash: 0x42846e4df9149e7b74807d2682f5735e38fb85274a6bceab5c5b5d627819dbf4, tx index: 2, block number: 10635
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x8d3b…50ce, gas price: 0.021208838408189230 TSSC, tx hash: 0xcb43db20e06fa9815385350797fa59c97f0a8e7f0d7e8f5c9d1d2f6972421910, tx index: 6, block number: 10635
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x985c…a47c, gas price: 0.021153994648250001 TSSC, tx hash: 0x301f40051d770879f2b06836cd2808fb559abe2638cd9cf49081ac167f63109f, tx index: 0, block number: 10634
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x28a3…4b12, gas price: 0.021153994648250001 TSSC, tx hash: 0x0667117184af59f10b18793ac3babd205d1ca96cac4ebae3cab5ea8d0fa3da5a, tx index: 8, block number: 10634
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x3655…017f, gas price: 0.021153994648250001 TSSC, tx hash: 0x1152df04dac880cb29e7ff1f928a9817f579e20fc061ae77af9468107107e86f, tx index: 1, block number: 10634
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x780d…d2f5, gas price: 0.021208838408189230 TSSC, tx hash: 0x223aacddfb6117e94c6164eb711bce0a9fd6001e88d6f773fbd46e47c889afed, tx index: 7, block number: 10635
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x511a…8cf8, gas price: 0.021153994648250001 TSSC, tx hash: 0xf3b1a7cacfe46a217d24b9bc11b6dfe50fa8adaeeddd1e26aa2400d635e8cfa3, tx index: 4, block number: 10634
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x053c…e5e9, gas price: 0.021208838408189230 TSSC, tx hash: 0x3317b97bda00b17a1f9695755dc1e2619be7db876a1fea292d9968fb901a78e0, tx index: 1, block number: 10635
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x8ed8…eb32, gas price: 0.021153994648250001 TSSC, tx hash: 0x54b85f95578a4a9328dc924e2ebfb3c358822e59df281588b813f81f7aa3fd1f, tx index: 7, block number: 10634
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0xe745…162d, gas price: 0.021208838408189230 TSSC, tx hash: 0xe26da01ec274b5898f90889f703bef69322a5ac56716bceeb6997720a09e055b, tx index: 8, block number: 10635
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x67b7…e032, gas price: 0.021153994648250001 TSSC, tx hash: 0x9142ec76c84af0da2c6658b5fdeaa4b519b1b36fc8f4ba7f4c69fc5b6297042e, tx index: 5, block number: 10634
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x0ec1…b119, gas price: 0.021208838408189230 TSSC, tx hash: 0xdd2023fec9a8eb424a1e28f11214fccfeaa160da38f4b6b6ea70f3538d874ffe, tx index: 3, block number: 10635
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x3447…04dc, gas price: 0.021153994648250001 TSSC, tx hash: 0x09e850022dffa1e2d8af65e9a7cb878b1e82e3ee43cb132233fdd124dc89c963, tx index: 3, block number: 10634
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x1f3b…7e25, gas price: 0.021208838408189230 TSSC, tx hash: 0xd7a98a418e26a5cc451bb89d838a1ef31130373e2453fea0c9ef96f17f7e99f5, tx index: 0, block number: 10635
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x6b7a…3b8c, gas price: 0.021208838408189230 TSSC, tx hash: 0x52fb49ae1bbe63bcc7e53c3ab7c3297c8ad1594c49dd0f71ec724b1204d6a316, tx index: 5, block number: 10635
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:17Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x7a93…6458, gas price: 0.021153994648250001 TSSC, tx hash: 0xff2ddd8e663dc026de9012a50784544f77eeef7d413adca6b98fffd1607685d6, tx index: 6, block number: 10634
+[2023-11-09T20:51:21Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:21Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0xa701…511d, gas price: 0.021208838408189230 TSSC, tx hash: 0xaca81512b95087ac2bef27723116b125aef22b4c23f4f38b417d457bb22a7825, tx index: 4, block number: 10635
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0xc0b4…974c, gas price: 0.021217592248656034 TSSC, tx hash: 0x31de1caae88762af56fd7d5e72b0a974547b9922d31f302df8eda058b53e5be8, tx index: 5, block number: 10636
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0xe881…de0c, gas price: 0.021217592248656034 TSSC, tx hash: 0xb9cbaeee3fe20bb1486321b2cecdf151f6e03fdfa5d46e6645b404f6816ba2de, tx index: 6, block number: 10636
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0xf883…2ec9, gas price: 0.021217592248656034 TSSC, tx hash: 0x7ba39e1bfc2058c500381f051118216a70430bd7ca4c376ada6338f671713dff, tx index: 4, block number: 10636
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x48c3…860e, gas price: 0.021217592248656034 TSSC, tx hash: 0x13e2839d5e842f2ea9b2a7f4dc65dc58ee857012bb36920b9dd78cb96343105b, tx index: 0, block number: 10636
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x2392…27bf, gas price: 0.021217592248656034 TSSC, tx hash: 0x465ec2feabeddba41f73715706f1db66d9b6b419832b78f3bf9c6da4258ad063, tx index: 2, block number: 10636
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0xca9a…da35, gas price: 0.021217592248656034 TSSC, tx hash: 0xe66f2782e6e0bb14ce6cf942ed90063791f1c2ae5c01831a481797be19af3135, tx index: 1, block number: 10636
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] [Post-tx] Gas unit: 6028604
+[2023-11-09T20:51:32Z DEBUG dtp::contracts] Load::setArray(2200) ==> from: 0x7b88…a941, gas price: 0.021217592248656034 TSSC, tx hash: 0x0312d3a1c0eababec1940d15efb034a0ef782eddfb751978453cf235d88677fa, tx index: 3, block number: 10636
+thread 'main' panicked at 'Failure in 'setArray' method of Load contract', dtp/src/contracts.rs:140:10
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+[2023-11-09T20:51:35Z DEBUG rustls::common_state] Sending warning alert CloseNotify

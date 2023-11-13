@@ -1,0 +1,30 @@
+Status: SUCCESS
+===============
+
+Command:
+========
+
+```sh
+$ cargo run -p dtp  -- \
+--funding-amount 90100000000000000 \ 
+--initial-funded-account-private-key $FUNDER_PRIVATE_KEY \
+--num-accounts 1 \
+--rpc-url $SUBSPACE_EVM_RPC_URL \
+--transaction-type heavy
+```
+
+Funder's initial balance: 165.833235254382203980 TSSC.
+=====
+
+Address[0]:     0x1af7043d7f9e7abe5bb540995c686f79f3d502d4
+Private key[0]: 0x891be29ef10012c86fe75a3b180f2b2da07711a43d8d2769dab7253e202ad11b
+
+Calling 'Fund' contract's 'transferTsscToMany' method for sending funds in bulk...
+
+'0x0370…d246' sent funds to newly created accounts, which incurred a gas fee of '0.00017832900118886 TSSC', has a tx hash: '0xa5a6830b7b8d57b32d5ae2cb15ca7b6d765f1a49a2b83486a5d70f15c8cc101a', indexed at #0 in block #67643.
+
+Sending heavy transactions...
+Heavy transactions sent successfully.
+=====
+Funder's final balance: 165.742958038381022540 TSSC.
+Funder spent: 0.090277216001181437 TSSC
